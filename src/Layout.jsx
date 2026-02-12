@@ -57,13 +57,13 @@ export default function Layout({ children, currentPageName }) {
   const operatorNavItems = [
     { name: 'Dashboard', page: 'Dashboard', icon: Home },
     { name: 'Scan', page: 'Scan', icon: ScanBarcode },
-    { name: 'My WIP', page: 'MyWIP', icon: ClipboardList },
+    { name: 'Progress', page: 'MyWIP', icon: ClipboardList },
   ];
 
   const adminNavItems = [
     { name: 'Dashboard', page: 'Dashboard', icon: Home },
     { name: 'Scan', page: 'Scan', icon: ScanBarcode },
-    { name: 'My WIP', page: 'MyWIP', icon: ClipboardList },
+    { name: 'Progress', page: 'MyWIP', icon: ClipboardList },
     { name: 'Parts', page: 'Parts', icon: Package },
     { name: 'Operations', page: 'Operations', icon: Settings },
     { name: 'Reports', page: 'Reports', icon: BarChart3 },
