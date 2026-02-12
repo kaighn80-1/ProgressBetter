@@ -53,6 +53,8 @@ import Operations from './pages/Operations';
 import Parts from './pages/Parts';
 import Reports from './pages/Reports';
 import Scan from './pages/Scan';
+import Projects from './pages/Projects';
+import ProjectDetail from './pages/ProjectDetail';
 import __Layout from './Layout.jsx';
 
 
@@ -63,6 +65,8 @@ export const PAGES = {
     "Parts": Parts,
     "Reports": Reports,
     "Scan": Scan,
+    "Projects": Projects,
+    "ProjectDetail": ProjectDetail,
 }
 
 export const pagesConfig = {

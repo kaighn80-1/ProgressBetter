@@ -13,7 +13,8 @@ import {
   X,
   LogOut,
   User,
-  AlertTriangle
+  AlertTriangle,
+  FolderOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -64,6 +65,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Dashboard', page: 'Dashboard', icon: Home },
     { name: 'Scan', page: 'Scan', icon: ScanBarcode },
     { name: 'Progress', page: 'MyWIP', icon: ClipboardList },
+    { name: 'Projects', page: 'Projects', icon: FolderOpen },
     { name: 'Parts', page: 'Parts', icon: Package },
     { name: 'Operations', page: 'Operations', icon: Settings },
     { name: 'Reports', page: 'Reports', icon: BarChart3 },
