@@ -14,14 +14,24 @@ import {
   ArrowRight,
   Clock,
   TrendingUp,
-  Box
+  Box,
+  UserPlus
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [parts, setParts] = useState([]);
   const [wips, setWips] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('user');
+  const [inviting, setInviting] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -49,6 +59,25 @@ export default function Dashboard() {
   const lowStockParts = parts.filter(p => p.min_stock_level && (p.finished_stock || 0) < p.min_stock_level);
   const totalStock = parts.reduce((sum, p) => sum + (p.finished_stock || 0), 0);
   const totalWipQuantity = wips.reduce((sum, w) => sum + (w.quantity || 0), 0);
+
+  const handleInviteUser = async () => {
+    if (!inviteEmail) {
+      toast.error('Please enter an email address');
+      return;
+    }
+    setInviting(true);
+    try {
+      await base44.users.inviteUser(inviteEmail, inviteRole);
+      toast.success(`Invitation sent to ${inviteEmail}`);
+      setInviteDialogOpen(false);
+      setInviteEmail('');
+      setInviteRole('user');
+    } catch (e) {
+      toast.error('Failed to send invitation');
+    } finally {
+      setInviting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -273,6 +302,64 @@ export default function Dashboard() {
             </Card>
           </Link>
         </div>
+      )}
+
+      {/* Invite User - Admin Only */}
+      {isAdmin && (
+        <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+          <DialogTrigger asChild>
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <UserPlus className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Invite User</p>
+                  <p className="text-xs text-slate-500">Add team members</p>
+                </div>
+              </CardContent>
+            </Card>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Invite User</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="user@example.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="role">Role</Label>
+                <Select value={inviteRole} onValueChange={setInviteRole}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">Operator</SelectItem>
+                    <SelectItem value="admin">Manager</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-500">
+                  Operators can scan and manage WIP. Managers have full access.
+                </p>
+              </div>
+              <Button 
+                className="w-full" 
+                onClick={handleInviteUser}
+                disabled={inviting}
+              >
+                {inviting ? 'Sending...' : 'Send Invitation'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
