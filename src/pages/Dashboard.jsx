@@ -15,7 +15,9 @@ import {
   Clock,
   TrendingUp,
   Box,
-  UserPlus
+  UserPlus,
+  Users,
+  ShieldCheck
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -32,6 +34,9 @@ export default function Dashboard() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('user');
   const [inviting, setInviting] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
+  const [usersDialogOpen, setUsersDialogOpen] = useState(false);
+  const [promoting, setPromoting] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -47,6 +52,12 @@ export default function Dashboard() {
       setUser(userData);
       setParts(partsData);
       setWips(wipsData);
+      
+      // Load all users if admin
+      if (userData?.role === 'admin') {
+        const usersData = await base44.entities.User.list();
+        setAllUsers(usersData);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -76,6 +87,20 @@ export default function Dashboard() {
       toast.error('Failed to send invitation');
     } finally {
       setInviting(false);
+    }
+  };
+
+  const handlePromoteUser = async (userToPromote) => {
+    setPromoting(userToPromote.id);
+    try {
+      await base44.entities.User.update(userToPromote.id, { role: 'admin' });
+      toast.success(`${userToPromote.full_name || userToPromote.email} promoted to Manager`);
+      const usersData = await base44.entities.User.list();
+      setAllUsers(usersData);
+    } catch (e) {
+      toast.error('Failed to promote user');
+    } finally {
+      setPromoting(null);
     }
   };
 
@@ -304,62 +329,121 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Invite User - Admin Only */}
+      {/* Team Management - Admin Only */}
       {isAdmin && (
-        <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
-          <DialogTrigger asChild>
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <UserPlus className="w-5 h-5 text-blue-600" />
+        <div className="grid grid-cols-2 gap-4">
+          <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+            <DialogTrigger asChild>
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <UserPlus className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Invite User</p>
+                    <p className="text-xs text-slate-500">Add team members</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Invite User</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="user@example.com"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                  />
                 </div>
-                <div>
-                  <p className="font-medium text-sm">Invite User</p>
-                  <p className="text-xs text-slate-500">Add team members</p>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role</Label>
+                  <Select value={inviteRole} onValueChange={setInviteRole}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">Operator</SelectItem>
+                      <SelectItem value="admin">Manager</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-slate-500">
+                    Operators can scan and manage WIP. Managers have full access.
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Invite User</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="user@example.com"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                />
+                <Button 
+                  className="w-full" 
+                  onClick={handleInviteUser}
+                  disabled={inviting}
+                >
+                  {inviting ? 'Sending...' : 'Send Invitation'}
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Select value={inviteRole} onValueChange={setInviteRole}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user">Operator</SelectItem>
-                    <SelectItem value="admin">Manager</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-slate-500">
-                  Operators can scan and manage WIP. Managers have full access.
-                </p>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={usersDialogOpen} onOpenChange={setUsersDialogOpen}>
+            <DialogTrigger asChild>
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <Users className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Team Members</p>
+                    <p className="text-xs text-slate-500">{allUsers.length} users</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Team Members</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 pt-4 max-h-96 overflow-y-auto">
+                {allUsers.map((u) => (
+                  <div key={u.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                    <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-slate-600">
+                        {(u.full_name || u.email || '?')[0].toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-slate-900 truncate">
+                        {u.full_name || 'No name'}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">{u.email}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge className={u.role === 'admin' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}>
+                        {u.role === 'admin' ? 'Manager' : 'Operator'}
+                      </Badge>
+                      {u.role !== 'admin' && u.id !== user?.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handlePromoteUser(u)}
+                          disabled={promoting === u.id}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        >
+                          <ShieldCheck className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {allUsers.length === 0 && (
+                  <p className="text-center text-slate-500 py-4">No users found</p>
+                )}
               </div>
-              <Button 
-                className="w-full" 
-                onClick={handleInviteUser}
-                disabled={inviting}
-              >
-                {inviting ? 'Sending...' : 'Send Invitation'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       )}
     </div>
   );

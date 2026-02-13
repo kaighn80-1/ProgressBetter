@@ -51,10 +51,10 @@ import Dashboard from './pages/Dashboard';
 import MyWIP from './pages/MyWIP';
 import Operations from './pages/Operations';
 import Parts from './pages/Parts';
+import ProjectDetail from './pages/ProjectDetail';
+import Projects from './pages/Projects';
 import Reports from './pages/Reports';
 import Scan from './pages/Scan';
-import Projects from './pages/Projects';
-import ProjectDetail from './pages/ProjectDetail';
 import __Layout from './Layout.jsx';
 
 
@@ -63,10 +63,10 @@ export const PAGES = {
     "MyWIP": MyWIP,
     "Operations": Operations,
     "Parts": Parts,
+    "ProjectDetail": ProjectDetail,
+    "Projects": Projects,
     "Reports": Reports,
     "Scan": Scan,
-    "Projects": Projects,
-    "ProjectDetail": ProjectDetail,
 }
 
 export const pagesConfig = {
