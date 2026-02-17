@@ -21,24 +21,31 @@ import {
   Loader2,
   Activity,
   User,
-  ChevronRight
+  ChevronRight,
+  Pause,
+  Play,
+  CheckCircle,
+  Circle
 } from 'lucide-react';
 
 export default function MyWIP() {
   const [user, setUser] = useState(null);
   const [wips, setWips] = useState([]);
+  const [parts, setParts] = useState([]);
   const [operations, setOperations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedWip, setSelectedWip] = useState(null);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showScrapDialog, setShowScrapDialog] = useState(false);
+  const [showPauseDialog, setShowPauseDialog] = useState(false);
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState('my');
   
   const [moveForm, setMoveForm] = useState({ operation_id: '', notes: '' });
   const [completeForm, setCompleteForm] = useState({ notes: '' });
   const [scrapForm, setScrapForm] = useState({ reason: '' });
+  const [pauseForm, setPauseForm] = useState({ notes: '' });
 
   useEffect(() => {
     loadData();
@@ -53,14 +60,17 @@ export default function MyWIP() {
 
   const loadData = async () => {
     try {
-      const [userData, wipsData, ops] = await Promise.all([
+      const [userData, activeWips, pausedWips, ops, partsData] = await Promise.all([
         base44.auth.me(),
         base44.entities.WorkInProgress.filter({ status: 'active' }, '-started_date'),
-        base44.entities.Operation.list('sequence_number')
+        base44.entities.WorkInProgress.filter({ status: 'paused' }, '-started_date'),
+        base44.entities.Operation.list('sequence_number'),
+        base44.entities.Part.list()
       ]);
       setUser(userData);
-      setWips(wipsData);
+      setWips([...activeWips, ...pausedWips]);
       setOperations(ops);
+      setParts(partsData);
     } catch (e) {
       console.error(e);
     } finally {
@@ -81,6 +91,16 @@ export default function MyWIP() {
 
   const isAdmin = user?.role === 'admin';
   const filteredWips = filter === 'all' ? wips : wips.filter(w => w.worker_email === user?.email);
+
+  const getPartForWip = (wip) => parts.find(p => p.id === wip.part_id);
+  
+  const getWipProgress = (wip) => {
+    const part = getPartForWip(wip);
+    if (!part?.required_operations?.length) return null;
+    const completed = wip.completed_operations?.length || 0;
+    const total = part.required_operations.length;
+    return { completed, total, percent: Math.round((completed / total) * 100) };
+  };
 
   const moveToNextOperation = async () => {
     if (!moveForm.operation_id) {
@@ -206,6 +226,132 @@ export default function MyWIP() {
     }
   };
 
+  const signOffOperation = async (operationId) => {
+    setSaving(true);
+    try {
+      const completedOps = [...(selectedWip.completed_operations || []), operationId];
+      const part = getPartForWip(selectedWip);
+      const currentIndex = part?.required_operations?.indexOf(operationId) ?? -1;
+      const nextIndex = currentIndex + 1;
+      const nextOpId = part?.required_operations?.[nextIndex];
+      const nextOp = operations.find(o => o.id === nextOpId);
+      
+      await base44.entities.WorkInProgress.update(selectedWip.id, {
+        completed_operations: completedOps,
+        current_operation_index: nextIndex,
+        operation_id: nextOpId || selectedWip.operation_id,
+        operation_name: nextOp?.operation_name || selectedWip.operation_name
+      });
+
+      const op = operations.find(o => o.id === operationId);
+      await base44.entities.StockTransaction.create({
+        part_id: selectedWip.part_id,
+        part_name: selectedWip.part_name,
+        transaction_type: 'moved_to_wip',
+        quantity_change: 0,
+        wip_id: selectedWip.id,
+        operation_name: op?.operation_name,
+        user_email: user?.email,
+        user_name: user?.full_name,
+        notes: `Completed operation: ${op?.operation_name}`
+      });
+
+      toast.success(`${op?.operation_name} completed!`);
+      
+      // Refresh selected WIP
+      const updatedWip = await base44.entities.WorkInProgress.filter({ id: selectedWip.id });
+      if (updatedWip.length > 0) setSelectedWip(updatedWip[0]);
+      loadData();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to sign off operation');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const pauseWip = async () => {
+    setSaving(true);
+    try {
+      await base44.entities.WorkInProgress.update(selectedWip.id, {
+        status: 'paused',
+        notes: pauseForm.notes || 'Paused by operator'
+      });
+
+      // Return parts to stock
+      const partData = await base44.entities.Part.filter({ id: selectedWip.part_id });
+      if (partData.length > 0) {
+        const newStock = (partData[0].finished_stock || 0) + selectedWip.quantity;
+        await base44.entities.Part.update(selectedWip.part_id, {
+          finished_stock: newStock
+        });
+      }
+
+      await base44.entities.StockTransaction.create({
+        part_id: selectedWip.part_id,
+        part_name: selectedWip.part_name,
+        transaction_type: 'completed_wip',
+        quantity_change: selectedWip.quantity,
+        wip_id: selectedWip.id,
+        operation_name: selectedWip.operation_name,
+        user_email: user?.email,
+        user_name: user?.full_name,
+        notes: `Paused - returned to stock. Progress: ${selectedWip.completed_operations?.length || 0} operations done`
+      });
+
+      toast.success('Batch paused and returned to stock');
+      setShowPauseDialog(false);
+      setPauseForm({ notes: '' });
+      setSelectedWip(null);
+      loadData();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to pause batch');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resumeWip = async (wip) => {
+    setSaving(true);
+    try {
+      // Remove from stock
+      const partData = await base44.entities.Part.filter({ id: wip.part_id });
+      if (partData.length > 0) {
+        const newStock = Math.max(0, (partData[0].finished_stock || 0) - wip.quantity);
+        await base44.entities.Part.update(wip.part_id, {
+          finished_stock: newStock
+        });
+      }
+
+      await base44.entities.WorkInProgress.update(wip.id, {
+        status: 'active',
+        worker_email: user?.email,
+        worker_name: user?.full_name
+      });
+
+      await base44.entities.StockTransaction.create({
+        part_id: wip.part_id,
+        part_name: wip.part_name,
+        transaction_type: 'moved_to_wip',
+        quantity_change: -wip.quantity,
+        wip_id: wip.id,
+        operation_name: wip.operation_name,
+        user_email: user?.email,
+        user_name: user?.full_name,
+        notes: `Resumed from paused state`
+      });
+
+      toast.success('Batch resumed!');
+      loadData();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to resume batch');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-4 pb-24">
@@ -247,53 +393,69 @@ export default function MyWIP() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {filteredWips.map((wip) => (
-            <Card 
-              key={wip.id} 
-              className="border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => setSelectedWip(wip)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
-                      <Package className="w-7 h-7 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-slate-900">{wip.part_name}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                          {wip.operation_name}
-                        </Badge>
-                        <Badge variant="outline">
-                          {wip.quantity} pcs
-                        </Badge>
+          {filteredWips.map((wip) => {
+            const progress = getWipProgress(wip);
+            const isPaused = wip.status === 'paused';
+            
+            return (
+              <Card 
+                key={wip.id} 
+                className={`border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow ${isPaused ? 'border-l-4 border-l-amber-500' : ''}`}
+                onClick={() => !isPaused ? setSelectedWip(wip) : null}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${isPaused ? 'bg-amber-100' : 'bg-blue-100'}`}>
+                        {isPaused ? <Pause className="w-7 h-7 text-amber-600" /> : <Package className="w-7 h-7 text-blue-600" />}
                       </div>
-                      <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {format(new Date(wip.started_date), 'MMM d, h:mm a')}
-                        </span>
-                        {filter === 'all' && wip.worker_email !== user?.email && (
+                      <div>
+                        <h3 className="font-semibold text-slate-900">{wip.part_name}</h3>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <Badge variant="secondary" className={isPaused ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}>
+                            {isPaused ? 'Paused' : wip.operation_name}
+                          </Badge>
+                          <Badge variant="outline">
+                            {wip.quantity} pcs
+                          </Badge>
+                          {progress && (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                              {progress.completed}/{progress.total} ops
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
                           <span className="flex items-center gap-1">
-                            <User className="w-3 h-3" />
-                            {wip.worker_name}
+                            <Clock className="w-3 h-3" />
+                            {format(new Date(wip.started_date), 'MMM d, h:mm a')}
                           </span>
-                        )}
+                          {filter === 'all' && wip.worker_email !== user?.email && (
+                            <span className="flex items-center gap-1">
+                              <User className="w-3 h-3" />
+                              {wip.worker_name}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    {isPaused ? (
+                      <Button size="sm" onClick={(e) => { e.stopPropagation(); resumeWip(wip); }} disabled={saving}>
+                        <Play className="w-4 h-4 mr-1" /> Resume
+                      </Button>
+                    ) : (
+                      <ChevronRight className="w-5 h-5 text-slate-400" />
+                    )}
                   </div>
-                  <ChevronRight className="w-5 h-5 text-slate-400" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
       {/* WIP Detail Dialog */}
-      <Dialog open={!!selectedWip && !showMoveDialog && !showCompleteDialog && !showScrapDialog} onOpenChange={() => setSelectedWip(null)}>
-        <DialogContent className="max-w-md">
+      <Dialog open={!!selectedWip && !showMoveDialog && !showCompleteDialog && !showScrapDialog && !showPauseDialog} onOpenChange={() => setSelectedWip(null)}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{selectedWip?.part_name}</DialogTitle>
             <DialogDescription>
@@ -305,19 +467,77 @@ export default function MyWIP() {
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 bg-slate-50 rounded-xl">
-                  <p className="text-xs text-slate-500">Operation</p>
-                  <p className="font-semibold text-slate-900">{selectedWip.operation_name}</p>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-xl">
                   <p className="text-xs text-slate-500">Quantity</p>
                   <p className="font-semibold text-slate-900">{selectedWip.quantity} pcs</p>
                 </div>
+                <div className="p-3 bg-slate-50 rounded-xl">
+                  <p className="text-xs text-slate-500">Worker</p>
+                  <p className="font-semibold text-slate-900">{selectedWip.worker_name || 'Unknown'}</p>
+                </div>
               </div>
-              
-              <div className="p-3 bg-slate-50 rounded-xl">
-                <p className="text-xs text-slate-500">Worker</p>
-                <p className="font-semibold text-slate-900">{selectedWip.worker_name || selectedWip.worker_email}</p>
-              </div>
+
+              {/* Operations Checklist */}
+              {(() => {
+                const part = getPartForWip(selectedWip);
+                if (part?.required_operations?.length > 0) {
+                  const completedOps = selectedWip.completed_operations || [];
+                  return (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-slate-700">Operations Progress</p>
+                      <div className="space-y-2">
+                        {part.required_operations.map((opId, index) => {
+                          const op = operations.find(o => o.id === opId);
+                          const isCompleted = completedOps.includes(opId);
+                          const isNext = !isCompleted && completedOps.length === index;
+                          const isLocked = !isCompleted && completedOps.length < index;
+                          
+                          return (
+                            <div 
+                              key={opId} 
+                              className={`flex items-center gap-3 p-3 rounded-xl border ${
+                                isCompleted ? 'bg-green-50 border-green-200' : 
+                                isNext ? 'bg-blue-50 border-blue-200' : 
+                                'bg-slate-50 border-slate-200'
+                              }`}
+                            >
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                isCompleted ? 'bg-green-500 text-white' : 
+                                isNext ? 'bg-blue-500 text-white' : 
+                                'bg-slate-300 text-slate-500'
+                              }`}>
+                                {isCompleted ? <Check className="w-4 h-4" /> : index + 1}
+                              </div>
+                              <span className={`flex-1 font-medium ${isCompleted ? 'text-green-700' : isLocked ? 'text-slate-400' : 'text-slate-700'}`}>
+                                {op?.operation_name}
+                              </span>
+                              {isNext && (
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => signOffOperation(opId)}
+                                  disabled={saving}
+                                  className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+                                  Sign Off
+                                </Button>
+                              )}
+                              {isCompleted && (
+                                <CheckCircle className="w-5 h-5 text-green-500" />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="p-3 bg-slate-50 rounded-xl">
+                    <p className="text-xs text-slate-500">Current Operation</p>
+                    <p className="font-semibold text-slate-900">{selectedWip.operation_name}</p>
+                  </div>
+                );
+              })()}
 
               {selectedWip.notes && (
                 <div className="p-3 bg-slate-50 rounded-xl">
@@ -327,13 +547,45 @@ export default function MyWIP() {
               )}
 
               <div className="grid grid-cols-1 gap-3 pt-2">
-                <Button 
-                  onClick={() => setShowMoveDialog(true)}
-                  className="h-12 bg-blue-600 hover:bg-blue-700"
-                >
-                  <ArrowRight className="w-5 h-5 mr-2" />
-                  Move to Next Operation
-                </Button>
+                {(() => {
+                  const part = getPartForWip(selectedWip);
+                  const allComplete = part?.required_operations?.length > 0 && 
+                    (selectedWip.completed_operations?.length || 0) >= part.required_operations.length;
+                  
+                  if (allComplete) {
+                    return (
+                      <Button 
+                        onClick={() => setShowCompleteDialog(true)}
+                        className="h-12 bg-green-600 hover:bg-green-700"
+                      >
+                        <Check className="w-5 h-5 mr-2" />
+                        All Done - Return to Stock
+                      </Button>
+                    );
+                  }
+                  
+                  return (
+                    <>
+                      {!part?.required_operations?.length && (
+                        <Button 
+                          onClick={() => setShowMoveDialog(true)}
+                          className="h-12 bg-blue-600 hover:bg-blue-700"
+                        >
+                          <ArrowRight className="w-5 h-5 mr-2" />
+                          Move to Next Operation
+                        </Button>
+                      )}
+                      <Button 
+                        variant="outline"
+                        onClick={() => setShowPauseDialog(true)}
+                        className="h-12 border-amber-500 text-amber-600 hover:bg-amber-50"
+                      >
+                        <Pause className="w-5 h-5 mr-2" />
+                        Pause & Return to Stock
+                      </Button>
+                    </>
+                  );
+                })()}
                 <Button 
                   variant="outline"
                   onClick={() => setShowCompleteDialog(true)}
@@ -464,6 +716,38 @@ export default function MyWIP() {
             <Button onClick={scrapWip} disabled={saving} variant="destructive">
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
               Scrap Batch
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pause Dialog */}
+      <Dialog open={showPauseDialog} onOpenChange={setShowPauseDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Pause & Return to Stock</DialogTitle>
+            <DialogDescription>
+              This will return {selectedWip?.quantity} units to stock. You can resume this batch later with progress saved.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Notes (optional)</Label>
+              <Textarea
+                placeholder="Add notes about current state..."
+                value={pauseForm.notes}
+                onChange={(e) => setPauseForm({ ...pauseForm, notes: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPauseDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={pauseWip} disabled={saving} className="bg-amber-600 hover:bg-amber-700">
+              {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Pause className="w-4 h-4 mr-2" />}
+              Pause Batch
             </Button>
           </DialogFooter>
         </DialogContent>
