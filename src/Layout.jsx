@@ -14,7 +14,8 @@ import {
   LogOut,
   User,
   AlertTriangle,
-  FolderOpen
+  FolderOpen,
+  Target
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -59,12 +60,14 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Dashboard', page: 'Dashboard', icon: Home },
     { name: 'Scan', page: 'Scan', icon: ScanBarcode },
     { name: 'Progress', page: 'MyWIP', icon: ClipboardList },
+    { name: 'Priorities', page: 'Requirements', icon: Target },
   ];
 
   const adminNavItems = [
     { name: 'Dashboard', page: 'Dashboard', icon: Home },
     { name: 'Scan', page: 'Scan', icon: ScanBarcode },
     { name: 'Progress', page: 'MyWIP', icon: ClipboardList },
+    { name: 'Priorities', page: 'Requirements', icon: Target },
     { name: 'Projects', page: 'Projects', icon: FolderOpen },
     { name: 'Parts', page: 'Parts', icon: Package },
     { name: 'Operations', page: 'Operations', icon: Settings },

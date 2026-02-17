@@ -55,6 +55,7 @@ import ProjectDetail from './pages/ProjectDetail';
 import Projects from './pages/Projects';
 import Reports from './pages/Reports';
 import Scan from './pages/Scan';
+import Requirements from './pages/Requirements';
 import __Layout from './Layout.jsx';
 
 
@@ -67,6 +68,7 @@ export const PAGES = {
     "Projects": Projects,
     "Reports": Reports,
     "Scan": Scan,
+    "Requirements": Requirements,
 }
 
 export const pagesConfig = {
