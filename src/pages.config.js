@@ -59,6 +59,7 @@ import Scan from './pages/Scan';
 import Fixings from './pages/Fixings';
 import PartialStockTake from './pages/PartialStockTake';
 import FullStockTake from './pages/FullStockTake';
+import Sections from './pages/Sections';
 import __Layout from './Layout.jsx';
 
 
@@ -75,6 +76,7 @@ export const PAGES = {
     "Fixings": Fixings,
     "PartialStockTake": PartialStockTake,
     "FullStockTake": FullStockTake,
+    "Sections": Sections,
 }
 
 export const pagesConfig = {

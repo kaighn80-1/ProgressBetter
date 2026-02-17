@@ -15,7 +15,8 @@ import {
   User,
   AlertTriangle,
   FolderOpen,
-  Target
+  Target,
+  Wrench
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -70,6 +71,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Priorities', page: 'Requirements', icon: Target },
     { name: 'Projects', page: 'Projects', icon: FolderOpen },
     { name: 'Parts', page: 'Parts', icon: Package },
+    { name: 'Fixings', page: 'Fixings', icon: Settings },
     { name: 'Operations', page: 'Operations', icon: Settings },
     { name: 'Reports', page: 'Reports', icon: BarChart3 },
   ];
