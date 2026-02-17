@@ -54,8 +54,11 @@ import Parts from './pages/Parts';
 import ProjectDetail from './pages/ProjectDetail';
 import Projects from './pages/Projects';
 import Reports from './pages/Reports';
-import Scan from './pages/Scan';
 import Requirements from './pages/Requirements';
+import Scan from './pages/Scan';
+import Fixings from './pages/Fixings';
+import PartialStockTake from './pages/PartialStockTake';
+import FullStockTake from './pages/FullStockTake';
 import __Layout from './Layout.jsx';
 
 
@@ -67,8 +70,11 @@ export const PAGES = {
     "ProjectDetail": ProjectDetail,
     "Projects": Projects,
     "Reports": Reports,
-    "Scan": Scan,
     "Requirements": Requirements,
+    "Scan": Scan,
+    "Fixings": Fixings,
+    "PartialStockTake": PartialStockTake,
+    "FullStockTake": FullStockTake,
 }
 
 export const pagesConfig = {
