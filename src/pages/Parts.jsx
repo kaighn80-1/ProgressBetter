@@ -25,7 +25,8 @@ import {
   Copy,
   ChevronUp,
   ChevronDown,
-  Settings
+  Settings,
+  Wrench
 } from 'lucide-react';
 
 const UNITS = ['pcs', 'kg', 'm', 'l', 'box', 'set'];
@@ -33,6 +34,10 @@ const UNITS = ['pcs', 'kg', 'm', 'l', 'box', 'set'];
 export default function Parts() {
   const [parts, setParts] = useState([]);
   const [operations, setOperations] = useState([]);
+  const [fixings, setFixings] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [sections, setSections] = useState([]);
+  const [subsections, setSubsections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showDialog, setShowDialog] = useState(false);
@@ -53,7 +58,16 @@ export default function Parts() {
     finished_stock: '',
     image_url: '',
     category: '',
-    required_operations: []
+    required_operations: [],
+    project_id: '',
+    section_id: '',
+    subsection_id: '',
+    tooling_required: '',
+    tooling_location: '',
+    finish_type: '',
+    assembly_number: '',
+    location: '',
+    required_fixings: []
   });
 
   useEffect(() => {
@@ -62,12 +76,20 @@ export default function Parts() {
 
   const loadParts = async () => {
     try {
-      const [partsData, opsData] = await Promise.all([
+      const [partsData, opsData, fixingsData, projectsData, sectionsData, subsectionsData] = await Promise.all([
         base44.entities.Part.list('part_name'),
-        base44.entities.Operation.list('sequence_number')
+        base44.entities.Operation.list('sequence_number'),
+        base44.entities.Fixing.list('fixing_name'),
+        base44.entities.Project.list('project_name'),
+        base44.entities.Section.list('order_index'),
+        base44.entities.Subsection.list('order_index')
       ]);
       setParts(partsData);
       setOperations(opsData);
+      setFixings(fixingsData);
+      setProjects(projectsData);
+      setSections(sectionsData);
+      setSubsections(subsectionsData);
     } catch (e) {
       console.error(e);
       toast.error('Failed to load parts');
@@ -95,7 +117,16 @@ export default function Parts() {
       finished_stock: '0',
       image_url: '',
       category: '',
-      required_operations: []
+      required_operations: [],
+      project_id: '',
+      section_id: '',
+      subsection_id: '',
+      tooling_required: '',
+      tooling_location: '',
+      finish_type: '',
+      assembly_number: '',
+      location: '',
+      required_fixings: []
     });
     setShowDialog(true);
   };
@@ -113,10 +144,44 @@ export default function Parts() {
       finished_stock: part.finished_stock?.toString() || '0',
       image_url: part.image_url || '',
       category: part.category || '',
-      required_operations: part.required_operations || []
+      required_operations: part.required_operations || [],
+      project_id: part.project_id || '',
+      section_id: part.section_id || '',
+      subsection_id: part.subsection_id || '',
+      tooling_required: part.tooling_required || '',
+      tooling_location: part.tooling_location || '',
+      finish_type: part.finish_type || '',
+      assembly_number: part.assembly_number || '',
+      location: part.location || '',
+      required_fixings: part.required_fixings || []
     });
     setShowDialog(true);
   };
+
+  const addFixing = () => {
+    setForm({
+      ...form,
+      required_fixings: [...form.required_fixings, { fixing_id: '', fixing_name: '', quantity_per_unit: 1 }]
+    });
+  };
+
+  const updateFixing = (index, field, value) => {
+    const updated = [...form.required_fixings];
+    if (field === 'fixing_id') {
+      const fixing = fixings.find(f => f.id === value);
+      updated[index] = { ...updated[index], fixing_id: value, fixing_name: fixing?.fixing_name || '' };
+    } else {
+      updated[index] = { ...updated[index], [field]: value };
+    }
+    setForm({ ...form, required_fixings: updated });
+  };
+
+  const removeFixing = (index) => {
+    setForm({ ...form, required_fixings: form.required_fixings.filter((_, i) => i !== index) });
+  };
+
+  const filteredSections = sections.filter(s => !form.project_id || s.project_id === form.project_id);
+  const filteredSubsections = subsections.filter(ss => !form.section_id || ss.section_id === form.section_id);
 
   const toggleOperation = (opId) => {
     const current = form.required_operations || [];
@@ -187,12 +252,19 @@ export default function Parts() {
         return op?.operation_name || '';
       });
       
+      const project = projects.find(p => p.id === form.project_id);
+      const section = sections.find(s => s.id === form.section_id);
+      const subsection = subsections.find(ss => ss.id === form.subsection_id);
+      
       const partData = {
         ...form,
         min_stock_level: form.min_stock_level ? parseFloat(form.min_stock_level) : null,
         reorder_quantity: form.reorder_quantity ? parseFloat(form.reorder_quantity) : null,
         finished_stock: form.finished_stock ? parseFloat(form.finished_stock) : 0,
-        required_operation_names: opNames
+        required_operation_names: opNames,
+        project_name: project?.project_name || null,
+        section_name: section?.section_name || null,
+        subsection_name: subsection?.subsection_name || null
       };
 
       if (editingPart) {
@@ -468,6 +540,101 @@ export default function Parts() {
                 />
               </div>
 
+              <div>
+                <Label>Location</Label>
+                <Input
+                  value={form.location}
+                  onChange={(e) => setForm({ ...form, location: e.target.value })}
+                  placeholder="e.g., Shelf B2"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label>Project</Label>
+                <Select value={form.project_id} onValueChange={(v) => setForm({ ...form, project_id: v, section_id: '', subsection_id: '' })}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={null}>None</SelectItem>
+                    {projects.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.project_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Section</Label>
+                <Select value={form.section_id} onValueChange={(v) => setForm({ ...form, section_id: v, subsection_id: '' })} disabled={!form.project_id}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={null}>None</SelectItem>
+                    {filteredSections.map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.section_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Subsection</Label>
+                <Select value={form.subsection_id} onValueChange={(v) => setForm({ ...form, subsection_id: v })} disabled={!form.section_id}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={null}>None</SelectItem>
+                    {filteredSubsections.map(ss => (
+                      <SelectItem key={ss.id} value={ss.id}>{ss.subsection_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Tooling Required</Label>
+                <Input
+                  value={form.tooling_required}
+                  onChange={(e) => setForm({ ...form, tooling_required: e.target.value })}
+                  placeholder="e.g., Drill press, jig"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label>Tooling Location</Label>
+                <Input
+                  value={form.tooling_location}
+                  onChange={(e) => setForm({ ...form, tooling_location: e.target.value })}
+                  placeholder="e.g., Tool rack 3"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label>Finish Type</Label>
+                <Input
+                  value={form.finish_type}
+                  onChange={(e) => setForm({ ...form, finish_type: e.target.value })}
+                  placeholder="e.g., Powder coat, Polish"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label>Assembly Number</Label>
+                <Input
+                  value={form.assembly_number}
+                  onChange={(e) => setForm({ ...form, assembly_number: e.target.value })}
+                  placeholder="Parent assembly"
+                  className="mt-1"
+                />
+              </div>
+
               <div className="col-span-2">
                 <Label>Part Image</Label>
                 <div className="mt-1">
@@ -552,6 +719,46 @@ export default function Parts() {
                     </Button>
                   ))}
                 </div>
+              </div>
+
+              <div className="col-span-2">
+                <Label>Required Fixings</Label>
+                <p className="text-xs text-slate-500 mb-2">Consumables needed per unit</p>
+                
+                {form.required_fixings.length > 0 && (
+                  <div className="space-y-2 mb-3">
+                    {form.required_fixings.map((rf, index) => (
+                      <div key={index} className="flex gap-2 items-start">
+                        <Select value={rf.fixing_id} onValueChange={(v) => updateFixing(index, 'fixing_id', v)}>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Select fixing..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {fixings.map(f => (
+                              <SelectItem key={f.id} value={f.id}>{f.fixing_name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          value={rf.quantity_per_unit}
+                          onChange={(e) => updateFixing(index, 'quantity_per_unit', parseFloat(e.target.value) || 0)}
+                          placeholder="Qty"
+                          className="w-20"
+                          min="0"
+                        />
+                        <Button variant="ghost" size="icon" onClick={() => removeFixing(index)} className="text-red-500">
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <Button type="button" variant="outline" size="sm" onClick={addFixing}>
+                  <Plus className="w-3 h-3 mr-1" />
+                  Add Fixing
+                </Button>
               </div>
             </div>
           </div>

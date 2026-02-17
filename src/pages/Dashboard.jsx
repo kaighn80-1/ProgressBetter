@@ -17,7 +17,10 @@ import {
   Box,
   UserPlus,
   Users,
-  ShieldCheck
+  ShieldCheck,
+  ClipboardCheck,
+  ClipboardList,
+  Wrench
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -28,6 +31,7 @@ import { toast } from 'sonner';
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [parts, setParts] = useState([]);
+  const [fixings, setFixings] = useState([]);
   const [wips, setWips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -44,13 +48,15 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [userData, partsData, wipsData] = await Promise.all([
+      const [userData, partsData, fixingsData, wipsData] = await Promise.all([
         base44.auth.me(),
         base44.entities.Part.list(),
+        base44.entities.Fixing.list(),
         base44.entities.WorkInProgress.filter({ status: 'active' })
       ]);
       setUser(userData);
       setParts(partsData);
+      setFixings(fixingsData);
       setWips(wipsData);
       
       // Load all users if admin
@@ -68,6 +74,7 @@ export default function Dashboard() {
   const isAdmin = user?.role === 'admin';
   const myWips = wips.filter(w => w.worker_email === user?.email);
   const lowStockParts = parts.filter(p => p.min_stock_level && (p.finished_stock || 0) < p.min_stock_level);
+  const lowStockFixings = fixings.filter(f => f.min_stock_level && (f.current_stock || 0) < f.min_stock_level);
   const totalStock = parts.reduce((sum, p) => sum + (p.finished_stock || 0), 0);
   const totalWipQuantity = wips.reduce((sum, w) => sum + (w.quantity || 0), 0);
 
@@ -152,18 +159,18 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className={`border-0 shadow-md ${lowStockParts.length > 0 ? 'bg-red-50' : ''}`}>
+        <Card className={`border-0 shadow-md ${(lowStockParts.length + lowStockFixings.length) > 0 ? 'bg-red-50' : ''}`}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                lowStockParts.length > 0 ? 'bg-red-100' : 'bg-amber-100'
+                (lowStockParts.length + lowStockFixings.length) > 0 ? 'bg-red-100' : 'bg-amber-100'
               }`}>
                 <AlertTriangle className={`w-6 h-6 ${
-                  lowStockParts.length > 0 ? 'text-red-600' : 'text-amber-600'
+                  (lowStockParts.length + lowStockFixings.length) > 0 ? 'text-red-600' : 'text-amber-600'
                 }`} />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-900">{lowStockParts.length}</p>
+                <p className="text-2xl font-bold text-slate-900">{lowStockParts.length + lowStockFixings.length}</p>
                 <p className="text-xs text-slate-500">Low Stock Alerts</p>
               </div>
             </div>
@@ -205,7 +212,7 @@ export default function Dashboard() {
       )}
 
       {/* Low Stock Alerts */}
-      {lowStockParts.length > 0 && (
+      {(lowStockParts.length > 0 || lowStockFixings.length > 0) && (
         <Card className="border-0 shadow-md border-l-4 border-l-red-500">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2 text-red-600">
@@ -214,7 +221,7 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {lowStockParts.slice(0, 5).map((part) => (
+            {lowStockParts.slice(0, 3).map((part) => (
               <div key={part.id} className="flex items-center justify-between p-3 bg-red-50 rounded-xl">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
@@ -231,10 +238,27 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
-            {lowStockParts.length > 5 && (
+            {lowStockFixings.slice(0, 2).map((fixing) => (
+              <div key={fixing.id} className="flex items-center justify-between p-3 bg-red-50 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                    <Wrench className="w-5 h-5 text-red-500" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-slate-900 text-sm">{fixing.fixing_name}</p>
+                    <p className="text-xs text-slate-500">{fixing.sku}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-red-600">{fixing.current_stock || 0}</p>
+                  <p className="text-xs text-slate-500">Min: {fixing.min_stock_level}</p>
+                </div>
+              </div>
+            ))}
+            {(lowStockParts.length + lowStockFixings.length) > 5 && (
               <Link to={createPageUrl('Reports')}>
                 <Button variant="ghost" className="w-full text-red-600">
-                  View all {lowStockParts.length} alerts
+                  View all {lowStockParts.length + lowStockFixings.length} alerts
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
@@ -296,6 +320,38 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Stock Take Actions */}
+      <div className="grid grid-cols-2 gap-4">
+        <Link to={createPageUrl('PartialStockTake')}>
+          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <ClipboardCheck className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">Cycle Count</p>
+                <p className="text-xs text-slate-500">Partial stock take</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+        {isAdmin && (
+          <Link to={createPageUrl('FullStockTake')}>
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <ClipboardList className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Full Count</p>
+                  <p className="text-xs text-slate-500">Complete inventory</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        )}
+      </div>
 
       {/* Quick Actions for Admin */}
       {isAdmin && (
