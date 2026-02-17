@@ -22,13 +22,17 @@ import {
   X,
   Upload,
   Check,
-  Copy
+  Copy,
+  ChevronUp,
+  ChevronDown,
+  Settings
 } from 'lucide-react';
 
 const UNITS = ['pcs', 'kg', 'm', 'l', 'box', 'set'];
 
 export default function Parts() {
   const [parts, setParts] = useState([]);
+  const [operations, setOperations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showDialog, setShowDialog] = useState(false);
@@ -48,7 +52,8 @@ export default function Parts() {
     reorder_quantity: '',
     finished_stock: '',
     image_url: '',
-    category: ''
+    category: '',
+    required_operations: []
   });
 
   useEffect(() => {
@@ -57,8 +62,12 @@ export default function Parts() {
 
   const loadParts = async () => {
     try {
-      const data = await base44.entities.Part.list('part_name');
-      setParts(data);
+      const [partsData, opsData] = await Promise.all([
+        base44.entities.Part.list('part_name'),
+        base44.entities.Operation.list('sequence_number')
+      ]);
+      setParts(partsData);
+      setOperations(opsData);
     } catch (e) {
       console.error(e);
       toast.error('Failed to load parts');
@@ -85,7 +94,8 @@ export default function Parts() {
       reorder_quantity: '',
       finished_stock: '0',
       image_url: '',
-      category: ''
+      category: '',
+      required_operations: []
     });
     setShowDialog(true);
   };
@@ -102,9 +112,33 @@ export default function Parts() {
       reorder_quantity: part.reorder_quantity?.toString() || '',
       finished_stock: part.finished_stock?.toString() || '0',
       image_url: part.image_url || '',
-      category: part.category || ''
+      category: part.category || '',
+      required_operations: part.required_operations || []
     });
     setShowDialog(true);
+  };
+
+  const toggleOperation = (opId) => {
+    const current = form.required_operations || [];
+    if (current.includes(opId)) {
+      setForm({ ...form, required_operations: current.filter(id => id !== opId) });
+    } else {
+      setForm({ ...form, required_operations: [...current, opId] });
+    }
+  };
+
+  const moveOperationUp = (index) => {
+    if (index === 0) return;
+    const ops = [...form.required_operations];
+    [ops[index - 1], ops[index]] = [ops[index], ops[index - 1]];
+    setForm({ ...form, required_operations: ops });
+  };
+
+  const moveOperationDown = (index) => {
+    if (index === form.required_operations.length - 1) return;
+    const ops = [...form.required_operations];
+    [ops[index], ops[index + 1]] = [ops[index + 1], ops[index]];
+    setForm({ ...form, required_operations: ops });
   };
 
   const generateBarcode = () => {
@@ -148,11 +182,17 @@ export default function Parts() {
 
     setSaving(true);
     try {
+      const opNames = form.required_operations.map(opId => {
+        const op = operations.find(o => o.id === opId);
+        return op?.operation_name || '';
+      });
+      
       const partData = {
         ...form,
         min_stock_level: form.min_stock_level ? parseFloat(form.min_stock_level) : null,
         reorder_quantity: form.reorder_quantity ? parseFloat(form.reorder_quantity) : null,
-        finished_stock: form.finished_stock ? parseFloat(form.finished_stock) : 0
+        finished_stock: form.finished_stock ? parseFloat(form.finished_stock) : 0,
+        required_operation_names: opNames
       };
 
       if (editingPart) {
@@ -288,7 +328,7 @@ export default function Parts() {
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-2 mt-3">
+                      <div className="flex items-center gap-2 mt-3 flex-wrap">
                         <Badge 
                           variant={isLowStock ? 'destructive' : 'secondary'}
                           className="flex items-center gap-1"
@@ -300,6 +340,12 @@ export default function Parts() {
                           <span className="text-xs text-slate-500">
                             Min: {part.min_stock_level}
                           </span>
+                        )}
+                        {part.required_operations?.length > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            <Settings className="w-3 h-3 mr-1" />
+                            {part.required_operations.length} ops
+                          </Badge>
                         )}
                       </div>
                     </div>
@@ -456,6 +502,55 @@ export default function Parts() {
                       )}
                     </label>
                   )}
+                </div>
+              </div>
+
+              <div className="col-span-2">
+                <Label className="flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  Required Operations (in order)
+                </Label>
+                <p className="text-xs text-slate-500 mb-2">Select operations this part must go through</p>
+                
+                {form.required_operations.length > 0 && (
+                  <div className="space-y-2 mb-3 p-3 bg-slate-50 rounded-lg">
+                    {form.required_operations.map((opId, index) => {
+                      const op = operations.find(o => o.id === opId);
+                      return (
+                        <div key={opId} className="flex items-center gap-2 bg-white p-2 rounded-lg border">
+                          <span className="w-6 h-6 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-xs font-medium">
+                            {index + 1}
+                          </span>
+                          <span className="flex-1 text-sm font-medium">{op?.operation_name}</span>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveOperationUp(index)} disabled={index === 0}>
+                            <ChevronUp className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveOperationDown(index)} disabled={index === form.required_operations.length - 1}>
+                            <ChevronDown className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => toggleOperation(opId)}>
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  {operations.filter(op => !form.required_operations.includes(op.id)).map((op) => (
+                    <Button
+                      key={op.id}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleOperation(op.id)}
+                      className="text-xs"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      {op.operation_name}
+                    </Button>
+                  ))}
                 </div>
               </div>
             </div>
