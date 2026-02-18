@@ -50,18 +50,6 @@ export default function Dashboard() {
     loadData();
   }, []);
 
-  useEffect(() => {
-    // Show toast alerts for low stock fixings
-    if (!loading && lowStockFixings.length > 0) {
-      lowStockFixings.forEach((fixing) => {
-        toast.warning(`Fixing "${fixing.fixing_name}" low`, {
-          description: `Only ${fixing.current_stock} ${fixing.unit || 'pcs'} left (min ${fixing.min_stock_level})${fixing.location ? ` – location: ${fixing.location}` : ''}`,
-          duration: 6000
-        });
-      });
-    }
-  }, [lowStockFixings.length, loading]);
-
   const loadData = async () => {
     try {
       const [userData, partsData, fixingsData, wipsData] = await Promise.all([
@@ -95,6 +83,18 @@ export default function Dashboard() {
   const lowStockFixings = fixings.filter(f => f.min_stock_level && (f.current_stock || 0) < f.min_stock_level);
   const totalStock = parts.reduce((sum, p) => sum + (p.finished_stock || 0), 0);
   const totalWipQuantity = wips.reduce((sum, w) => sum + (w.quantity || 0), 0);
+
+  useEffect(() => {
+    // Show toast alerts for low stock fixings
+    if (!loading && lowStockFixings.length > 0) {
+      lowStockFixings.forEach((fixing) => {
+        toast.warning(`Fixing "${fixing.fixing_name}" low`, {
+          description: `Only ${fixing.current_stock} ${fixing.unit || 'pcs'} left (min ${fixing.min_stock_level})${fixing.location ? ` – location: ${fixing.location}` : ''}`,
+          duration: 6000
+        });
+      });
+    }
+  }, [lowStockFixings.length, loading]);
 
   const handleInviteUser = async () => {
     if (!inviteEmail) {
