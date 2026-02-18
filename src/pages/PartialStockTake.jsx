@@ -38,13 +38,21 @@ export default function PartialStockTake() {
   const generateNextBatch = async () => {
     setLoading(true);
     try {
-      const [parts, fixings, projects, sections, subsections] = await Promise.all([
+      const [parts, fixings, wips, projects, sections, subsections] = await Promise.all([
         base44.entities.Part.list(),
         base44.entities.Fixing.list(),
+        base44.entities.WorkInProgress.filter({ status: 'active' }),
         base44.entities.Project.list(),
         base44.entities.Section.list(),
         base44.entities.Subsection.list()
       ]);
+
+      // Calculate WIP quantities by part
+      const wipByPart = {};
+      wips.forEach(wip => {
+        if (!wipByPart[wip.part_id]) wipByPart[wip.part_id] = 0;
+        wipByPart[wip.part_id] += wip.quantity || 0;
+      });
 
       // Combine and score items for counting priority
       const allItems = [
@@ -54,6 +62,7 @@ export default function PartialStockTake() {
           name: p.part_name, 
           number: p.part_number,
           stock: p.finished_stock || 0,
+          wip_quantity: wipByPart[p.id] || 0,
           last_counted: p.last_counted_date,
           project_name: p.project_name,
           section_name: p.section_name,
@@ -65,6 +74,7 @@ export default function PartialStockTake() {
           name: f.fixing_name, 
           number: f.sku,
           stock: f.current_stock || 0,
+          wip_quantity: 0,
           last_counted: f.last_counted_date,
           project_name: null,
           section_name: null,
@@ -309,9 +319,16 @@ export default function PartialStockTake() {
                               Show Current Stock
                             </Button>
                           ) : (
-                            <Badge variant="outline">
-                              Current: {item.stock} {item.unit || 'pcs'}
-                            </Badge>
+                            <>
+                              <Badge variant="outline">
+                                Finished: {item.stock} {item.unit || 'pcs'}
+                              </Badge>
+                              {item.wip_quantity > 0 && (
+                                <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700">
+                                  WIP: {item.wip_quantity} {item.unit || 'pcs'}
+                                </Badge>
+                              )}
+                            </>
                           )}
                           {item.location && (
                             <span className="text-xs text-slate-500">📍 {item.location}</span>

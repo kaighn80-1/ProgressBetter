@@ -27,6 +27,8 @@ export default function FullStockTakeReport() {
   const [reportGenerated, setReportGenerated] = useState(false);
   const [generatedAt, setGeneratedAt] = useState(null);
 
+  const [wips, setWips] = useState([]);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -34,14 +36,30 @@ export default function FullStockTakeReport() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [partsData, fixingsData, projectsData] = await Promise.all([
+      const [partsData, fixingsData, projectsData, wipsData] = await Promise.all([
         base44.entities.Part.list('part_name'),
         base44.entities.Fixing.list('fixing_name'),
-        base44.entities.Project.list()
+        base44.entities.Project.list(),
+        base44.entities.WorkInProgress.filter({ status: 'active' })
       ]);
-      setParts(partsData);
+      
+      // Calculate WIP quantities by part
+      const wipByPart = {};
+      wipsData.forEach(wip => {
+        if (!wipByPart[wip.part_id]) wipByPart[wip.part_id] = 0;
+        wipByPart[wip.part_id] += wip.quantity || 0;
+      });
+      
+      // Add WIP quantities to parts
+      const partsWithWip = partsData.map(p => ({
+        ...p,
+        wip_quantity: wipByPart[p.id] || 0
+      }));
+      
+      setParts(partsWithWip);
       setFixings(fixingsData);
       setProjects(projectsData);
+      setWips(wipsData);
     } catch (e) {
       console.error(e);
       toast.error('Failed to load data');
@@ -352,7 +370,8 @@ export default function FullStockTakeReport() {
                             <th className="text-left p-2 print:p-1 border" style={{ color: '#64748B' }}>Part Name</th>
                             <th className="text-left p-2 print:p-1 border" style={{ color: '#64748B' }}>Part Number</th>
                             <th className="text-left p-2 print:p-1 border" style={{ color: '#64748B' }}>Subsection</th>
-                            <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>Stock</th>
+                            <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>Finished</th>
+                            <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>WIP</th>
                             <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>Min</th>
                             <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>Reorder</th>
                             <th className="text-left p-2 print:p-1 border" style={{ color: '#64748B' }}>Location</th>
@@ -371,6 +390,9 @@ export default function FullStockTakeReport() {
                                 <td className="p-2 print:p-1 border text-center font-bold"
                                   style={{ color: isLowStock ? '#F59E0B' : '#1E293B' }}>
                                   {part.finished_stock || 0}
+                                </td>
+                                <td className="p-2 print:p-1 border text-center text-blue-600 font-medium">
+                                  {part.wip_quantity || 0}
                                 </td>
                                 <td className="p-2 print:p-1 border text-center">{part.min_stock_level || '-'}</td>
                                 <td className="p-2 print:p-1 border text-center">{part.reorder_quantity || '-'}</td>
@@ -411,7 +433,8 @@ export default function FullStockTakeReport() {
                         <tr style={{ backgroundColor: '#F1F5F9' }}>
                           <th className="text-left p-2 print:p-1 border" style={{ color: '#64748B' }}>Part Name</th>
                           <th className="text-left p-2 print:p-1 border" style={{ color: '#64748B' }}>Part Number</th>
-                          <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>Stock</th>
+                          <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>Finished</th>
+                          <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>WIP</th>
                           <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>Min</th>
                           <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>Reorder</th>
                           <th className="text-left p-2 print:p-1 border" style={{ color: '#64748B' }}>Location</th>
@@ -429,6 +452,9 @@ export default function FullStockTakeReport() {
                               <td className="p-2 print:p-1 border text-center font-bold"
                                 style={{ color: isLowStock ? '#F59E0B' : '#1E293B' }}>
                                 {part.finished_stock || 0}
+                              </td>
+                              <td className="p-2 print:p-1 border text-center text-blue-600 font-medium">
+                                {part.wip_quantity || 0}
                               </td>
                               <td className="p-2 print:p-1 border text-center">{part.min_stock_level || '-'}</td>
                               <td className="p-2 print:p-1 border text-center">{part.reorder_quantity || '-'}</td>

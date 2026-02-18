@@ -30,10 +30,18 @@ export default function FullStockTake() {
   const startFullCount = async () => {
     setLoading(true);
     try {
-      const [parts, fixings] = await Promise.all([
+      const [parts, fixings, wips] = await Promise.all([
         base44.entities.Part.list(),
-        base44.entities.Fixing.list()
+        base44.entities.Fixing.list(),
+        base44.entities.WorkInProgress.filter({ status: 'active' })
       ]);
+
+      // Calculate WIP quantities by part
+      const wipByPart = {};
+      wips.forEach(wip => {
+        if (!wipByPart[wip.part_id]) wipByPart[wip.part_id] = 0;
+        wipByPart[wip.part_id] += wip.quantity || 0;
+      });
 
       const items = [
         ...parts.map(p => ({ 
@@ -42,6 +50,7 @@ export default function FullStockTake() {
           name: p.part_name, 
           number: p.part_number,
           stock: p.finished_stock || 0,
+          wip_quantity: wipByPart[p.id] || 0,
           project: p.project_name || '',
           section: p.section_name || '',
           subsection: p.subsection_name || ''
@@ -52,6 +61,7 @@ export default function FullStockTake() {
           name: f.fixing_name, 
           number: f.sku,
           stock: f.current_stock || 0,
+          wip_quantity: 0,
           project: '',
           section: '',
           subsection: ''
@@ -284,10 +294,15 @@ export default function FullStockTake() {
                           {item.subsection && <p className="text-xs text-slate-400 truncate">{item.subsection}</p>}
                         </div>
 
-                        <div>
+                        <div className="flex flex-col gap-1">
                           <Badge variant="outline" className="text-xs">
-                            System: {item.stock}
+                            Finished: {item.stock}
                           </Badge>
+                          {item.wip_quantity > 0 && (
+                            <Badge variant="outline" className="text-xs bg-blue-50 border-blue-300 text-blue-700">
+                              WIP: {item.wip_quantity}
+                            </Badge>
+                          )}
                         </div>
 
                         {!isCounted ? (
