@@ -74,6 +74,8 @@ export default function Dashboard() {
   };
 
   const isAdmin = user?.role === 'admin';
+  const isSupervisor = user?.role === 'supervisor';
+  const canManageTeam = isAdmin; // Only full managers can invite/manage users
   const myWips = wips.filter(w => w.worker_email === user?.email);
   const lowStockParts = parts.filter(p => p.min_stock_level && (p.finished_stock || 0) < p.min_stock_level);
   const lowStockFixings = fixings.filter(f => f.min_stock_level && (f.current_stock || 0) < f.min_stock_level);
@@ -313,7 +315,7 @@ export default function Dashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          {(isAdmin ? wips : myWips).length === 0 ? (
+          {((isAdmin || isSupervisor) ? wips : myWips).length === 0 ? (
             <div className="text-center py-8" style={{ color: '#64748B' }}>
               <Activity className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p className="text-sm">No active work in progress</p>

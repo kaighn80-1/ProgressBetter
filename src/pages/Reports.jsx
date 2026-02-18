@@ -253,6 +253,8 @@ export default function Reports() {
   };
 
   const isManager = user?.role === 'admin' || user?.role === 'manager';
+  const isSupervisor = user?.role === 'supervisor';
+  const canViewOperatorActivity = isManager; // Only full managers can see detailed operator activity
 
   if (loading) {
     return (
@@ -362,7 +364,7 @@ export default function Reports() {
             <History className="w-4 h-4" />
             History
           </TabsTrigger>
-          {isManager && (
+          {canViewOperatorActivity && (
             <TabsTrigger value="operator" className="flex items-center gap-2">
               <UserCircle className="w-4 h-4" />
               Operator Activity
@@ -483,7 +485,7 @@ export default function Reports() {
         </TabsContent>
 
         {/* Operator Activity Tab */}
-        {isManager && (
+        {canViewOperatorActivity && (
           <TabsContent value="operator" className="space-y-4">
             {/* Filters */}
             <Card className="border-0 shadow-md">

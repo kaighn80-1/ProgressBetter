@@ -65,22 +65,33 @@ export default function Layout({ children, currentPageName }) {
 
   const isAdmin = user?.role === 'admin';
   const isManager = isAdmin || user?.role === 'manager';
+  const isSupervisor = user?.role === 'supervisor';
   const isOperatorMode = viewMode === 'operator';
+  const isSupervisorMode = viewMode === 'supervisor';
 
   const handleToggleViewMode = async () => {
-    if (!isManager) return;
+    if (!isManager && !isSupervisor) return;
     
     setSwitching(true);
-    const newMode = viewMode === 'manager' ? 'operator' : 'manager';
+    let newMode;
+    
+    if (isManager) {
+      // Manager can cycle through all modes
+      if (viewMode === 'manager') newMode = 'supervisor';
+      else if (viewMode === 'supervisor') newMode = 'operator';
+      else newMode = 'manager';
+    } else if (isSupervisor) {
+      // Supervisor can toggle between supervisor and operator
+      newMode = viewMode === 'supervisor' ? 'operator' : 'supervisor';
+    } else {
+      return; // Operators can't switch
+    }
     
     try {
       await base44.auth.updateMe({ view_mode: newMode });
       setViewMode(newMode);
-      toast.success(
-        newMode === 'operator' 
-          ? '🔄 Switched to Operator Mode' 
-          : '🔄 Back to Manager Mode'
-      );
+      const modeNames = { operator: 'Operator', supervisor: 'Supervisor', manager: 'Manager' };
+      toast.success(`🔄 Switched to ${modeNames[newMode]} Mode`);
       setSidebarOpen(false);
     } catch (e) {
       console.error(e);
@@ -95,6 +106,17 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Scan Barcode', page: 'Scan', icon: ScanBarcode },
     { name: 'Progress', page: 'MyWIP', icon: ClipboardList },
     { name: 'Partial Stock Take', page: 'PartialStockTake', icon: AlertTriangle },
+  ];
+
+  const supervisorNavItems = [
+    { name: 'Dashboard', page: 'Dashboard', icon: Home },
+    { name: 'Scan Barcode', page: 'Scan', icon: ScanBarcode },
+    { name: 'Progress', page: 'MyWIP', icon: ClipboardList },
+    { name: 'Priorities', page: 'Requirements', icon: Target },
+    { name: 'Delivery Notes', page: 'DeliveryNotes', icon: TrendingUp },
+    { name: 'Stock Report', page: 'FullStockTakeReport', icon: ClipboardList },
+    { name: 'Partial Stock Take', page: 'PartialStockTake', icon: AlertTriangle },
+    { name: 'Full Stock Take', page: 'FullStockTake', icon: ClipboardList },
   ];
 
   const adminNavItems = [
@@ -113,7 +135,11 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Full Stock Take', page: 'FullStockTake', icon: ClipboardList },
   ];
 
-  const navItems = (isManager && !isOperatorMode) ? adminNavItems : operatorNavItems;
+  const navItems = 
+    (isManager && viewMode === 'manager') ? adminNavItems :
+    (isManager && viewMode === 'supervisor') ? supervisorNavItems :
+    (isSupervisor && viewMode === 'supervisor') ? supervisorNavItems :
+    operatorNavItems;
 
   const handleLogout = () => {
     base44.auth.logout();
@@ -132,20 +158,20 @@ export default function Layout({ children, currentPageName }) {
           </div>
         </div>
         
-        {/* View Mode Switcher - Only for Managers */}
-        {isManager && (
+        {/* View Mode Switcher - For Managers and Supervisors */}
+        {(isManager || isSupervisor) && (
           <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: '#334155' }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-slate-300">View Mode</span>
               <Badge 
                 variant="outline" 
                 style={{ 
-                  backgroundColor: isOperatorMode ? '#DBEAFE' : '#D1FAE5',
-                  color: isOperatorMode ? '#1E40AF' : '#065F46',
+                  backgroundColor: isOperatorMode ? '#DBEAFE' : isSupervisorMode ? '#FED7AA' : '#D1FAE5',
+                  color: isOperatorMode ? '#1E40AF' : isSupervisorMode ? '#92400E' : '#065F46',
                   borderColor: 'transparent'
                 }}
               >
-                {isOperatorMode ? 'Operator' : 'Manager'}
+                {isOperatorMode ? 'Operator' : isSupervisorMode ? 'Supervisor' : 'Manager'}
               </Badge>
             </div>
             <button
@@ -153,7 +179,7 @@ export default function Layout({ children, currentPageName }) {
               disabled={switching}
               className="w-full h-10 rounded-lg flex items-center justify-center gap-2 transition-all font-medium"
               style={{ 
-                backgroundColor: isOperatorMode ? '#3B82F6' : '#10B981',
+                backgroundColor: isOperatorMode ? '#3B82F6' : isSupervisorMode ? '#F59E0B' : '#10B981',
                 color: 'white'
               }}
             >
@@ -162,7 +188,12 @@ export default function Layout({ children, currentPageName }) {
               ) : (
                 <>
                   <ArrowRight className="w-4 h-4" />
-                  Switch to {isOperatorMode ? 'Manager' : 'Operator'}
+                  {isManager ? (
+                    viewMode === 'manager' ? 'Switch to Supervisor' :
+                    viewMode === 'supervisor' ? 'Switch to Operator' : 'Back to Manager'
+                  ) : (
+                    viewMode === 'supervisor' ? 'Switch to Operator' : 'Back to Supervisor'
+                  )}
                 </>
               )}
             </button>
@@ -206,13 +237,20 @@ export default function Layout({ children, currentPageName }) {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{user.full_name || 'User'}</p>
               <p className="text-xs text-slate-400 truncate">{user.email}</p>
-              <div className="flex gap-1 mt-1">
-                <Badge variant="outline" className={`text-xs ${isAdmin ? 'border-amber-500 text-amber-400' : 'border-slate-500 text-slate-400'}`}>
-                  {isAdmin ? 'Manager' : 'Operator'}
+              <div className="flex flex-wrap gap-1 mt-1">
+                <Badge variant="outline" className={`text-xs ${
+                  isAdmin ? 'border-amber-500 text-amber-400' : 
+                  isSupervisor ? 'border-orange-400 text-orange-400' : 
+                  'border-slate-500 text-slate-400'
+                }`}>
+                  {isAdmin ? 'Manager' : isSupervisor ? 'Supervisor' : 'Operator'}
                 </Badge>
-                {isManager && isOperatorMode && (
-                  <Badge variant="outline" className="text-xs border-blue-400 text-blue-400">
-                    Viewing as Operator
+                {(isManager || isSupervisor) && viewMode !== (isManager ? 'manager' : 'supervisor') && (
+                  <Badge variant="outline" className={`text-xs ${
+                    isOperatorMode ? 'border-blue-400 text-blue-400' :
+                    isSupervisorMode ? 'border-orange-400 text-orange-400' : ''
+                  }`}>
+                    Viewing as {isOperatorMode ? 'Operator' : 'Supervisor'}
                   </Badge>
                 )}
               </div>

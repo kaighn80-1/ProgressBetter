@@ -90,6 +90,8 @@ export default function MyWIP() {
   };
 
   const isAdmin = user?.role === 'admin';
+  const isSupervisor = user?.role === 'supervisor';
+  const canViewAllWIPs = isAdmin || isSupervisor;
   const filteredWips = filter === 'all' ? wips : wips.filter(w => w.worker_email === user?.email);
 
   const getPartForWip = (wip) => parts.find(p => p.id === wip.part_id);
