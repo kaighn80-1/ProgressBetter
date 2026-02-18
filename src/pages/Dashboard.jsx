@@ -138,7 +138,7 @@ export default function Dashboard() {
               Welcome, {user?.full_name?.split(' ')[0] || 'Operator'}
             </h1>
             <p className="text-sm" style={{ color: '#DBEAFE' }}>
-              {isAdmin ? 'Manager Dashboard' : 'Operator Dashboard'}
+              {isAdmin ? 'Manager Dashboard' : isSupervisor ? 'Supervisor Dashboard' : 'Operator Dashboard'}
             </p>
           </div>
           <Button 
@@ -176,8 +176,8 @@ export default function Dashboard() {
                 <Activity className="w-6 h-6" style={{ color: '#3B82F6' }} />
               </div>
               <div>
-                <p className="text-2xl font-bold" style={{ color: '#1E293B' }}>{isAdmin ? wips.length : myWips.length}</p>
-                <p className="text-xs" style={{ color: '#64748B' }}>{isAdmin ? 'All Active WIP' : 'My Active WIP'}</p>
+                <p className="text-2xl font-bold" style={{ color: '#1E293B' }}>{(isAdmin || isSupervisor) ? wips.length : myWips.length}</p>
+                <p className="text-xs" style={{ color: '#64748B' }}>{(isAdmin || isSupervisor) ? 'All Active WIP' : 'My Active WIP'}</p>
               </div>
             </div>
           </CardContent>
@@ -304,7 +304,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
               <Clock className="w-5 h-5" style={{ color: '#3B82F6' }} />
-              {isAdmin ? 'All Active WIP' : 'My Active WIP'}
+              {(isAdmin || isSupervisor) ? 'All Active WIP' : 'My Active WIP'}
             </CardTitle>
             <Link to={createPageUrl('MyWIP')}>
               <Button variant="ghost" size="sm" style={{ color: '#3B82F6' }}>
@@ -327,7 +327,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="space-y-3">
-              {(isAdmin ? wips : myWips).slice(0, 5).map((wip) => (
+              {((isAdmin || isSupervisor) ? wips : myWips).slice(0, 5).map((wip) => (
                 <Link key={wip.id} to={createPageUrl(`MyWIP?wip=${wip.id}`)}>
                   <div className="flex items-center justify-between p-3 rounded-xl transition-colors" style={{ backgroundColor: '#F8FAFC' }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'}
@@ -469,11 +469,12 @@ export default function Dashboard() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="user">Operator</SelectItem>
+                      <SelectItem value="supervisor">Supervisor</SelectItem>
                       <SelectItem value="admin">Manager</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-slate-500">
-                    Operators can scan and manage WIP. Managers have full access.
+                    Operators: basic functions. Supervisors: + priorities, delivery notes, stock reports. Managers: full access.
                   </p>
                 </div>
                 <Button 
@@ -520,8 +521,12 @@ export default function Dashboard() {
                       <p className="text-xs text-slate-500 truncate">{u.email}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className={u.role === 'admin' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}>
-                        {u.role === 'admin' ? 'Manager' : 'Operator'}
+                      <Badge className={
+                        u.role === 'admin' ? 'bg-amber-100 text-amber-700' : 
+                        u.role === 'supervisor' ? 'bg-orange-100 text-orange-700' : 
+                        'bg-slate-100 text-slate-600'
+                      }>
+                        {u.role === 'admin' ? 'Manager' : u.role === 'supervisor' ? 'Supervisor' : 'Operator'}
                       </Badge>
                       {u.role !== 'admin' && u.id !== user?.id && (
                         <Button
