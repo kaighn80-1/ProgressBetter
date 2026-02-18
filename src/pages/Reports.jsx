@@ -20,8 +20,14 @@ import {
   RefreshCw,
   TrendingUp,
   Box,
-  Clock
+  Clock,
+  UserCircle,
+  Download,
+  Calendar,
+  CheckCircle2,
+  XCircle
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Reports() {
   const [parts, setParts] = useState([]);
@@ -31,28 +37,124 @@ export default function Reports() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [transactionFilter, setTransactionFilter] = useState('all');
+  
+  // Operator Activity state
+  const [users, setUsers] = useState([]);
+  const [selectedOperator, setSelectedOperator] = useState('');
+  const [timeFrame, setTimeFrame] = useState('month');
+  const [customDate, setCustomDate] = useState(new Date().toISOString().split('T')[0]);
+  const [operatorWips, setOperatorWips] = useState([]);
+  const [operatorTransactions, setOperatorTransactions] = useState([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     loadData();
+    loadCurrentUser();
   }, []);
+
+  useEffect(() => {
+    if (selectedOperator) {
+      loadOperatorActivity();
+    }
+  }, [selectedOperator, timeFrame, customDate]);
+
+  const loadCurrentUser = async () => {
+    try {
+      const userData = await base44.auth.me();
+      setUser(userData);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [partsData, wipsData, transData, opsData] = await Promise.all([
+      const [partsData, wipsData, transData, opsData, usersData] = await Promise.all([
         base44.entities.Part.list('part_name'),
         base44.entities.WorkInProgress.filter({ status: 'active' }),
         base44.entities.StockTransaction.list('-created_date', 100),
-        base44.entities.Operation.list('sequence_number')
+        base44.entities.Operation.list('sequence_number'),
+        base44.entities.User.list()
       ]);
       setParts(partsData);
       setWips(wipsData);
       setTransactions(transData);
       setOperations(opsData);
+      setUsers(usersData);
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getDateRange = () => {
+    const now = new Date();
+    const start = new Date(customDate);
+    let end = new Date(customDate);
+    
+    switch (timeFrame) {
+      case 'day':
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+        break;
+      case 'week':
+        const dayOfWeek = start.getDay();
+        start.setDate(start.getDate() - dayOfWeek);
+        start.setHours(0, 0, 0, 0);
+        end.setDate(start.getDate() + 6);
+        end.setHours(23, 59, 59, 999);
+        break;
+      case 'month':
+        start.setDate(1);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+        end.setHours(23, 59, 59, 999);
+        break;
+      case 'total':
+        return { start: null, end: null };
+      default:
+        return { start: null, end: null };
+    }
+    return { start, end };
+  };
+
+  const loadOperatorActivity = async () => {
+    if (!selectedOperator) return;
+    
+    setLoadingActivity(true);
+    try {
+      const { start, end } = getDateRange();
+      
+      // Load all WIPs for operator (completed and active)
+      const allWips = await base44.entities.WorkInProgress.list('-created_date', 500);
+      let filteredWips = allWips.filter(w => w.worker_email === selectedOperator);
+      
+      // Load all transactions for operator
+      const allTrans = await base44.entities.StockTransaction.list('-created_date', 500);
+      let filteredTrans = allTrans.filter(t => t.user_email === selectedOperator);
+      
+      // Apply date filter if not 'total'
+      if (start && end) {
+        filteredWips = filteredWips.filter(w => {
+          const wipDate = new Date(w.started_date || w.created_date);
+          return wipDate >= start && wipDate <= end;
+        });
+        
+        filteredTrans = filteredTrans.filter(t => {
+          const transDate = new Date(t.created_date);
+          return transDate >= start && transDate <= end;
+        });
+      }
+      
+      setOperatorWips(filteredWips);
+      setOperatorTransactions(filteredTrans);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingActivity(false);
     }
   };
 
@@ -98,11 +200,59 @@ export default function Reports() {
       moved_to_wip: { label: 'To WIP', className: 'bg-blue-100 text-blue-700' },
       completed_wip: { label: 'Completed', className: 'bg-green-100 text-green-700' },
       scrapped: { label: 'Scrapped', className: 'bg-red-100 text-red-700' },
-      adjustment: { label: 'Adjusted', className: 'bg-slate-100 text-slate-700' }
+      adjustment: { label: 'Adjusted', className: 'bg-slate-100 text-slate-700' },
+      delivered: { label: 'Delivered', className: 'bg-purple-100 text-purple-700' }
     };
     const config = configs[type] || { label: type, className: 'bg-slate-100 text-slate-700' };
     return <Badge className={config.className}>{config.label}</Badge>;
   };
+
+  // Operator Activity Calculations
+  const completedBatches = operatorWips.filter(w => w.status === 'completed').length;
+  const totalPartsCompleted = operatorTransactions
+    .filter(t => t.transaction_type === 'completed_wip')
+    .reduce((sum, t) => sum + Math.abs(t.quantity_change), 0);
+  const totalScrapped = operatorTransactions
+    .filter(t => t.transaction_type === 'scrapped')
+    .reduce((sum, t) => sum + Math.abs(t.quantity_change), 0);
+  
+  const totalTimeMinutes = operatorWips.reduce((sum, wip) => {
+    if (wip.operation_times && Array.isArray(wip.operation_times)) {
+      return sum + wip.operation_times.reduce((opSum, op) => opSum + (op.duration_minutes || 0), 0);
+    }
+    return sum;
+  }, 0);
+  
+  const avgTimePerOp = completedBatches > 0 
+    ? (totalTimeMinutes / completedBatches).toFixed(1) 
+    : 0;
+
+  const handleExportActivity = () => {
+    const selectedUser = users.find(u => u.email === selectedOperator);
+    const userName = selectedUser?.full_name || selectedOperator;
+    
+    let csvContent = `Operator Activity Report - ${userName}\n`;
+    csvContent += `Period: ${timeFrame.charAt(0).toUpperCase() + timeFrame.slice(1)}\n`;
+    csvContent += `Generated: ${format(new Date(), 'PPP')}\n\n`;
+    
+    csvContent += `Date,Part Name,Part Number,Project,Operation,Quantity,Status,Time (min),Batch ID\n`;
+    
+    operatorWips.forEach(wip => {
+      const wipDate = format(new Date(wip.started_date || wip.created_date), 'yyyy-MM-dd');
+      const time = wip.operation_times?.reduce((sum, op) => sum + (op.duration_minutes || 0), 0) || 0;
+      csvContent += `${wipDate},${wip.part_name || ''},${wip.part_barcode || ''},${wip.project_id || ''},${wip.operation_name || ''},${wip.quantity},${wip.status},${time},${wip.id}\n`;
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `operator-activity-${userName.replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const isManager = user?.role === 'admin' || user?.role === 'manager';
 
   if (loading) {
     return (
@@ -196,7 +346,7 @@ export default function Reports() {
 
       {/* Tabs */}
       <Tabs defaultValue="alerts" className="space-y-4">
-        <TabsList className="w-full justify-start">
+        <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="alerts" className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4" />
             Alerts
@@ -212,6 +362,12 @@ export default function Reports() {
             <History className="w-4 h-4" />
             History
           </TabsTrigger>
+          {isManager && (
+            <TabsTrigger value="operator" className="flex items-center gap-2">
+              <UserCircle className="w-4 h-4" />
+              Operator Activity
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Low Stock Alerts */}
@@ -325,6 +481,250 @@ export default function Reports() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Operator Activity Tab */}
+        {isManager && (
+          <TabsContent value="operator" className="space-y-4">
+            {/* Filters */}
+            <Card className="border-0 shadow-md">
+              <CardContent className="p-5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block" style={{ color: '#1E293B' }}>
+                      Select Operator
+                    </label>
+                    <Select value={selectedOperator} onValueChange={setSelectedOperator}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Choose operator..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {users.map((u) => (
+                          <SelectItem key={u.email} value={u.email}>
+                            {u.full_name || u.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-2 block" style={{ color: '#1E293B' }}>
+                      Time Frame
+                    </label>
+                    <Select value={timeFrame} onValueChange={setTimeFrame}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="day">Today</SelectItem>
+                        <SelectItem value="week">This Week</SelectItem>
+                        <SelectItem value="month">This Month</SelectItem>
+                        <SelectItem value="total">All Time</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-2 block" style={{ color: '#1E293B' }}>
+                      Date
+                    </label>
+                    <Input
+                      type="date"
+                      value={customDate}
+                      onChange={(e) => setCustomDate(e.target.value)}
+                      className="h-11"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {!selectedOperator ? (
+              <Card className="border-0 shadow-md">
+                <CardContent className="py-16 text-center">
+                  <UserCircle className="w-16 h-16 mx-auto mb-4" style={{ color: '#CBD5E1' }} />
+                  <h3 className="font-semibold mb-2" style={{ color: '#1E293B' }}>
+                    Select an Operator
+                  </h3>
+                  <p style={{ color: '#64748B' }}>
+                    Choose an operator above to view their activity and performance
+                  </p>
+                </CardContent>
+              </Card>
+            ) : loadingActivity ? (
+              <div className="space-y-4">
+                <Skeleton className="h-24" />
+                <Skeleton className="h-64" />
+              </div>
+            ) : (
+              <>
+                {/* Summary Stats */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card className="border-0 shadow-md">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" 
+                          style={{ backgroundColor: '#D1FAE5' }}>
+                          <CheckCircle2 className="w-5 h-5" style={{ color: '#10B981' }} />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold" style={{ color: '#1E293B' }}>
+                            {totalPartsCompleted}
+                          </p>
+                          <p className="text-xs" style={{ color: '#64748B' }}>Parts Completed</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-0 shadow-md">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                          style={{ backgroundColor: '#DBEAFE' }}>
+                          <Activity className="w-5 h-5" style={{ color: '#3B82F6' }} />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold" style={{ color: '#1E293B' }}>
+                            {completedBatches}
+                          </p>
+                          <p className="text-xs" style={{ color: '#64748B' }}>Batches Done</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-0 shadow-md">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                          style={{ backgroundColor: '#E0E7FF' }}>
+                          <Clock className="w-5 h-5" style={{ color: '#3B82F6' }} />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold" style={{ color: '#1E293B' }}>
+                            {Math.floor(totalTimeMinutes / 60)}h {Math.round(totalTimeMinutes % 60)}m
+                          </p>
+                          <p className="text-xs" style={{ color: '#64748B' }}>Total Time</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-0 shadow-md">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                          style={{ backgroundColor: totalScrapped > 0 ? '#FED7AA' : '#F1F5F9' }}>
+                          <XCircle className="w-5 h-5" style={{ color: totalScrapped > 0 ? '#F59E0B' : '#CBD5E1' }} />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold" style={{ color: '#1E293B' }}>
+                            {totalScrapped}
+                          </p>
+                          <p className="text-xs" style={{ color: '#64748B' }}>Scrapped</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Export Button */}
+                <div className="flex justify-end">
+                  <Button 
+                    onClick={handleExportActivity}
+                    variant="outline"
+                    disabled={operatorWips.length === 0}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Export CSV
+                  </Button>
+                </div>
+
+                {/* Detailed Activity Table */}
+                <Card className="border-0 shadow-md">
+                  <CardHeader>
+                    <CardTitle className="text-base">Detailed Activity</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {operatorWips.length === 0 ? (
+                      <div className="text-center py-12">
+                        <Activity className="w-12 h-12 mx-auto mb-3" style={{ color: '#CBD5E1' }} />
+                        <p style={{ color: '#64748B' }}>
+                          No activity found for this operator in the selected period
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow style={{ backgroundColor: '#F8FAFC' }}>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Part</TableHead>
+                              <TableHead>Project</TableHead>
+                              <TableHead>Operation</TableHead>
+                              <TableHead className="text-center">Qty</TableHead>
+                              <TableHead className="text-center">Time</TableHead>
+                              <TableHead>Status</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {operatorWips.map((wip) => {
+                              const totalTime = wip.operation_times?.reduce((sum, op) => 
+                                sum + (op.duration_minutes || 0), 0) || 0;
+                              return (
+                                <TableRow key={wip.id}>
+                                  <TableCell className="text-sm">
+                                    <div>{format(new Date(wip.started_date || wip.created_date), 'MMM d, yyyy')}</div>
+                                    <div className="text-xs" style={{ color: '#64748B' }}>
+                                      {format(new Date(wip.started_date || wip.created_date), 'h:mm a')}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="font-medium text-sm">{wip.part_name}</div>
+                                    <div className="text-xs" style={{ color: '#64748B' }}>
+                                      {wip.part_barcode}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-sm" style={{ color: '#64748B' }}>
+                                    {wip.project_id || '-'}
+                                  </TableCell>
+                                  <TableCell className="text-sm">
+                                    {wip.operation_name}
+                                  </TableCell>
+                                  <TableCell className="text-center font-bold">
+                                    {wip.quantity}
+                                  </TableCell>
+                                  <TableCell className="text-center text-sm">
+                                    {totalTime > 0 
+                                      ? `${Math.floor(totalTime / 60)}h ${Math.round(totalTime % 60)}m`
+                                      : '-'}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge 
+                                      style={{
+                                        backgroundColor: wip.status === 'completed' ? '#D1FAE5' : 
+                                                       wip.status === 'scrapped' ? '#FEE2E2' : '#DBEAFE',
+                                        color: wip.status === 'completed' ? '#065F46' :
+                                               wip.status === 'scrapped' ? '#991B1B' : '#1E40AF'
+                                      }}
+                                    >
+                                      {wip.status}
+                                    </Badge>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </TabsContent>
+        )}
 
         {/* Transaction History */}
         <TabsContent value="history" className="space-y-4">
