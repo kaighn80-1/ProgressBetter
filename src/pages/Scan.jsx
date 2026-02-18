@@ -47,6 +47,8 @@ export default function Scan() {
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [cameraError, setCameraError] = useState(false);
+  const [showFixings, setShowFixings] = useState(false);
+  const [fixingDetails, setFixingDetails] = useState([]);
 
   // Action dialogs
   const [showWipDialog, setShowWipDialog] = useState(false);
@@ -147,6 +149,28 @@ export default function Scan() {
         });
         setActiveWips(wips);
         
+        // Load fixing details if part has fixings
+        if (part.required_fixings?.length > 0) {
+          const fixingIds = part.required_fixings.map(rf => rf.fixing_id);
+          const allFixings = await base44.entities.Fixing.list();
+          const relevantFixings = allFixings.filter(f => fixingIds.includes(f.id));
+          
+          const enriched = part.required_fixings.map(rf => {
+            const fixing = relevantFixings.find(f => f.id === rf.fixing_id);
+            return {
+              ...rf,
+              sku: fixing?.sku,
+              current_stock: fixing?.current_stock || 0,
+              min_stock_level: fixing?.min_stock_level,
+              location: fixing?.location,
+              unit: fixing?.unit
+            };
+          });
+          setFixingDetails(enriched);
+        } else {
+          setFixingDetails([]);
+        }
+        
         playSuccessSound();
         toast.success('✓ Part Found!', { 
           description: part.part_name,
@@ -196,6 +220,28 @@ export default function Scan() {
       status: 'active' 
     });
     setActiveWips(wips);
+    
+    // Load fixing details if part has fixings
+    if (part.required_fixings?.length > 0) {
+      const fixingIds = part.required_fixings.map(rf => rf.fixing_id);
+      const allFixings = await base44.entities.Fixing.list();
+      const relevantFixings = allFixings.filter(f => fixingIds.includes(f.id));
+      
+      const enriched = part.required_fixings.map(rf => {
+        const fixing = relevantFixings.find(f => f.id === rf.fixing_id);
+        return {
+          ...rf,
+          sku: fixing?.sku,
+          current_stock: fixing?.current_stock || 0,
+          min_stock_level: fixing?.min_stock_level,
+          location: fixing?.location,
+          unit: fixing?.unit
+        };
+      });
+      setFixingDetails(enriched);
+    } else {
+      setFixingDetails([]);
+    }
   };
 
   const startNewWip = async () => {
@@ -661,20 +707,73 @@ export default function Scan() {
                     )}
                   </div>
                 )}
-                {scannedPart.required_fixings?.length > 0 && (
-                  <div className="p-3 bg-blue-50 rounded-lg col-span-2">
-                    <div className="flex items-center gap-2 text-blue-700 text-xs mb-2">
-                      <Wrench className="w-3 h-3" />
-                      Fixings Required (per unit)
-                    </div>
-                    <div className="space-y-1">
-                      {scannedPart.required_fixings.map((rf, idx) => (
-                        <div key={idx} className="flex items-center justify-between text-sm">
-                          <span className="text-blue-900">{rf.fixing_name}</span>
-                          <span className="font-medium text-blue-700">{rf.quantity_per_unit}x</span>
-                        </div>
-                      ))}
-                    </div>
+                {fixingDetails.length > 0 && (
+                  <div className="col-span-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowFixings(!showFixings)}
+                      className="w-full h-14 border-2 border-blue-200 hover:bg-blue-50"
+                    >
+                      <Wrench className="w-5 h-5 mr-2 text-blue-600" />
+                      <span className="font-semibold text-blue-700">
+                        View Required Fixings ({fixingDetails.length})
+                      </span>
+                      <span className="ml-auto text-blue-600">{showFixings ? '−' : '+'}</span>
+                    </Button>
+                    
+                    {showFixings && (
+                      <div className="mt-3 space-y-2 border-2 border-blue-100 rounded-xl p-3 bg-blue-50/50">
+                        {fixingDetails.map((fixing, idx) => {
+                          const isLowStock = fixing.min_stock_level && fixing.current_stock < fixing.min_stock_level;
+                          return (
+                            <div 
+                              key={idx} 
+                              className={`p-4 rounded-lg border-2 ${
+                                isLowStock 
+                                  ? 'bg-amber-50 border-amber-300' 
+                                  : 'bg-white border-slate-200'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex-1">
+                                  <p className="font-semibold text-base text-slate-900">{fixing.fixing_name}</p>
+                                  <p className="text-sm text-slate-500 font-mono">{fixing.sku}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-lg font-bold text-blue-600">{fixing.quantity_per_unit}x</p>
+                                  <p className="text-xs text-slate-500">per unit</p>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-3 mt-3">
+                                {fixing.location && (
+                                  <div>
+                                    <p className="text-xs text-slate-500 mb-1">Location</p>
+                                    <p className="text-sm font-medium text-slate-900 flex items-center gap-1">
+                                      <MapPin className="w-3 h-3" />
+                                      {fixing.location}
+                                    </p>
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="text-xs text-slate-500 mb-1">Current Stock</p>
+                                  <p className={`text-sm font-bold ${isLowStock ? 'text-amber-600' : 'text-green-600'}`}>
+                                    {fixing.current_stock} {fixing.unit || 'pcs'}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              {isLowStock && (
+                                <div className="mt-3 flex items-center gap-2 text-amber-700 bg-amber-100 px-3 py-2 rounded-lg">
+                                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                                  <span className="text-sm font-medium">Low stock – reorder suggested</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
                 {scannedPart.finish_type && (
