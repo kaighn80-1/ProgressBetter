@@ -336,26 +336,35 @@ export default function Scan() {
                 </div>
               )}
               
-              <div className="flex gap-2">
-                <Input
-                  value={manualEntry}
-                  onChange={(e) => setManualEntry(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleManualScan()}
-                  placeholder="Or type barcode manually..."
-                  className="h-14 text-lg bg-white/90"
-                />
-                <Button 
-                  onClick={handleManualScan}
-                  disabled={!manualEntry.trim()}
-                  className="h-14 px-6 bg-blue-600 hover:bg-blue-700"
-                >
-                  <Check className="w-5 h-5" />
-                </Button>
+              <div className="space-y-2">
+                <Label className="text-white text-sm">Manual Entry:</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={manualEntry}
+                    onChange={(e) => setManualEntry(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleManualScan()}
+                    placeholder="Type barcode..."
+                    className="h-14 text-lg bg-white/90 font-mono"
+                  />
+                  <Button 
+                    onClick={handleManualScan}
+                    disabled={!manualEntry.trim()}
+                    className="h-14 px-6 bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Check className="w-5 h-5" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-slate-900 mb-2">Scan Parts</h1>
+        <p className="text-slate-600">Scan barcode or search for parts</p>
+      </div>
 
       {/* Scan Button */}
       <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-600 to-blue-700">
@@ -377,18 +386,86 @@ export default function Scan() {
         </CardContent>
       </Card>
 
-      {/* Search */}
-      <Card className="border-0 shadow-md">
+      {/* Quick Test Barcodes */}
+      <Card className="border-0 shadow-md bg-gradient-to-r from-amber-50 to-orange-50">
         <CardContent className="p-4">
+          <p className="text-xs text-amber-700 font-medium mb-3">🧪 Test Barcodes:</p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleScan('123456789')}
+              className="font-mono text-xs border-amber-300 hover:bg-amber-100"
+            >
+              123456789
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleScan('987654321')}
+              className="font-mono text-xs border-amber-300 hover:bg-amber-100"
+            >
+              987654321
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleScan('555123456')}
+              className="font-mono text-xs border-amber-300 hover:bg-amber-100"
+            >
+              555123456
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Manual Entry / Search */}
+      <Card className="border-0 shadow-md">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Search className="w-5 h-5" />
+            Manual Entry
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label className="text-sm text-slate-600 mb-2 block">Enter Barcode:</Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Type barcode number..."
+                value={manualEntry}
+                onChange={(e) => setManualEntry(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleManualScan()}
+                className="h-14 text-lg font-mono"
+              />
+              <Button 
+                onClick={handleManualScan}
+                disabled={!manualEntry.trim() || loading}
+                size="lg"
+                className="h-14 px-8 bg-blue-600 hover:bg-blue-700"
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Submit'}
+              </Button>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-slate-500">Or Search</span>
+            </div>
+          </div>
+
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 placeholder="Search by name, number, or barcode..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="pl-10 h-12"
+                className="h-12"
               />
             </div>
             <Button onClick={handleSearch} className="h-12 px-6" disabled={searching}>
@@ -566,34 +643,39 @@ export default function Scan() {
               )}
 
               {/* Actions */}
-              <div className="space-y-3 pt-2">
+              <div className="space-y-3 pt-4">
+                <p className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-600" />
+                  Quick Actions
+                </p>
+                
                 <div className="grid grid-cols-2 gap-3">
                   <Button 
                     onClick={() => setShowWipDialog(true)}
                     size="lg"
-                    className="h-16 bg-blue-600 hover:bg-blue-700 text-base"
+                    className="h-20 bg-blue-600 hover:bg-blue-700 text-base flex-col gap-1"
                   >
-                    <Plus className="w-5 h-5 mr-2" />
-                    Start WIP
+                    <Plus className="w-6 h-6" />
+                    <span>Start WIP Batch</span>
                   </Button>
                   <Button 
                     variant="outline"
                     onClick={() => setShowAddStockDialog(true)}
                     size="lg"
-                    className="h-16 text-base"
+                    className="h-20 text-base flex-col gap-1 border-2"
                   >
-                    <Plus className="w-5 h-5 mr-2" />
-                    Add Stock
+                    <Plus className="w-6 h-6" />
+                    <span>Add to Stock</span>
                   </Button>
                 </div>
                 
                 <Button 
                   variant="secondary"
                   onClick={() => setShowDetailsDialog(true)}
-                  className="w-full h-12"
+                  className="w-full h-14 text-base bg-slate-100 hover:bg-slate-200"
                 >
                   View Full Details
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
 
                 {scannedPart.assembly_number && (
@@ -641,14 +723,34 @@ export default function Scan() {
             </div>
             <div>
               <Label>Quantity</Label>
-              <Input
-                type="number"
-                min="1"
-                placeholder="Enter quantity..."
-                value={wipForm.quantity}
-                onChange={(e) => setWipForm({ ...wipForm, quantity: e.target.value })}
-                className="h-12 mt-1"
-              />
+              <div className="flex items-center gap-3 mt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setWipForm({ ...wipForm, quantity: Math.max(1, parseInt(wipForm.quantity || 0) - 1).toString() })}
+                  className="h-12 w-12 text-xl"
+                >
+                  -
+                </Button>
+                <Input
+                  type="number"
+                  min="1"
+                  placeholder="0"
+                  value={wipForm.quantity}
+                  onChange={(e) => setWipForm({ ...wipForm, quantity: e.target.value })}
+                  className="h-12 text-center text-xl font-bold"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setWipForm({ ...wipForm, quantity: (parseInt(wipForm.quantity || 0) + 1).toString() })}
+                  className="h-12 w-12 text-xl"
+                >
+                  +
+                </Button>
+              </div>
             </div>
             <div>
               <Label>Notes (optional)</Label>
