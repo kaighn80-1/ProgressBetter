@@ -26,7 +26,10 @@ import {
   ArrowRight,
   Loader2,
   Trash2,
-  Eye
+  Eye,
+  Search,
+  Filter,
+  X
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -58,6 +61,11 @@ export default function DeliveryNotes() {
   const [selectedParts, setSelectedParts] = useState({});
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     loadData();
@@ -67,7 +75,7 @@ export default function DeliveryNotes() {
     try {
       const [userData, notesData, projectsData, addressesData, partsData] = await Promise.all([
         base44.auth.me(),
-        base44.entities.DeliveryNote.list('-created_date'),
+        base44.entities.DeliveryNote.list('-delivery_date'),
         base44.entities.Project.list(),
         base44.entities.DeliveryAddress.list(),
         base44.entities.Part.list()
@@ -84,6 +92,67 @@ export default function DeliveryNotes() {
       setLoading(false);
     }
   };
+
+  const getFilteredNotes = () => {
+    let filtered = [...deliveryNotes];
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(note => {
+        // Search by note number
+        if (note.delivery_note_number?.toLowerCase().includes(query)) return true;
+        
+        // Search by project name
+        if (note.project_name?.toLowerCase().includes(query)) return true;
+        
+        // Search by delivery date
+        if (note.delivery_date?.includes(query)) return true;
+        
+        // Search by delivery address
+        if (note.delivery_address_name?.toLowerCase().includes(query)) return true;
+        if (note.delivery_address_full?.toLowerCase().includes(query)) return true;
+        
+        // Search by part numbers in selected_parts
+        if (note.selected_parts?.some(part => 
+          part.part_number?.toLowerCase().includes(query) ||
+          part.part_name?.toLowerCase().includes(query)
+        )) return true;
+        
+        return false;
+      });
+    }
+
+    // Date filter
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      filtered = filtered.filter(note => {
+        const noteDate = new Date(note.delivery_date);
+        
+        if (dateFilter === 'today') {
+          return noteDate >= today && noteDate < new Date(today.getTime() + 86400000);
+        } else if (dateFilter === 'week') {
+          const weekAgo = new Date(today.getTime() - 7 * 86400000);
+          return noteDate >= weekAgo;
+        } else if (dateFilter === 'month') {
+          const monthAgo = new Date(today.getTime() - 30 * 86400000);
+          return noteDate >= monthAgo;
+        }
+        return true;
+      });
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(note => note.status === statusFilter);
+    }
+
+    return filtered;
+  };
+
+  const filteredNotes = getFilteredNotes();
 
   const getEligibleParts = () => {
     if (!selectedProject) return [];
@@ -280,7 +349,7 @@ export default function DeliveryNotes() {
   return (
     <div className="space-y-6 pb-24">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold" style={{ color: '#1E293B' }}>Delivery Notes</h1>
           <p style={{ color: '#64748B' }}>Manage part deliveries and shipments</p>
@@ -296,6 +365,112 @@ export default function DeliveryNotes() {
         </Button>
       </div>
 
+      {/* Search and Filters */}
+      <Card className="border-0 shadow-md">
+        <CardContent className="p-5">
+          <div className="space-y-4">
+            {/* Search Bar */}
+            <div>
+              <Label className="text-sm font-semibold mb-2 block" style={{ color: '#1E293B' }}>
+                Search Delivery Notes
+              </Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: '#94A3B8' }} />
+                  <Input
+                    placeholder="Search by note #, date, project, address, or part number..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 h-12"
+                  />
+                  {searchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-1 top-1/2 transform -translate-y-1/2"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+                <Button 
+                  variant="outline"
+                  size="lg"
+                  className="px-8"
+                  style={{ 
+                    backgroundColor: searchQuery ? '#3B82F6' : 'white',
+                    color: searchQuery ? 'white' : '#64748B',
+                    borderColor: '#E2E8F0'
+                  }}
+                >
+                  <Search className="w-5 h-5 mr-2" />
+                  Search
+                </Button>
+              </div>
+              <p className="text-xs mt-2" style={{ color: '#94A3B8' }}>
+                💡 Try searching: note number (DN-2602-1234), part number, project name, delivery address, or date (YYYY-MM-DD)
+              </p>
+            </div>
+
+            {/* Quick Filters */}
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4" style={{ color: '#64748B' }} />
+                <Label className="text-sm" style={{ color: '#64748B' }}>Quick Filters:</Label>
+              </div>
+              
+              <Select value={dateFilter} onValueChange={setDateFilter}>
+                <SelectTrigger className="w-40 h-10">
+                  <SelectValue placeholder="Date Range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Dates</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="week">This Week</SelectItem>
+                  <SelectItem value="month">This Month</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-40 h-10">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="generated">Generated</SelectItem>
+                  <SelectItem value="sent">Sent</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {(searchQuery || dateFilter !== 'all' || statusFilter !== 'all') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setDateFilter('all');
+                    setStatusFilter('all');
+                  }}
+                  style={{ color: '#64748B' }}
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Clear Filters
+                </Button>
+              )}
+
+              <div className="ml-auto">
+                <Badge variant="outline" className="text-sm font-semibold" style={{ color: '#3B82F6', borderColor: '#3B82F6' }}>
+                  {filteredNotes.length} {filteredNotes.length === 1 ? 'note' : 'notes'}
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Delivery Notes List */}
       {deliveryNotes.length === 0 ? (
         <Card className="border-0 shadow-md">
@@ -309,9 +484,33 @@ export default function DeliveryNotes() {
             </Button>
           </CardContent>
         </Card>
+      ) : filteredNotes.length === 0 ? (
+        <Card className="border-0 shadow-md">
+          <CardContent className="p-12 text-center">
+            <Search className="w-16 h-16 mx-auto mb-4" style={{ color: '#CBD5E1' }} />
+            <h3 className="text-lg font-semibold mb-2" style={{ color: '#1E293B' }}>No delivery notes found</h3>
+            <p className="mb-4" style={{ color: '#64748B' }}>
+              {searchQuery || dateFilter !== 'all' || statusFilter !== 'all' 
+                ? 'No delivery notes match your search criteria. Try adjusting your filters.'
+                : 'No delivery notes to display.'}
+            </p>
+            {(searchQuery || dateFilter !== 'all' || statusFilter !== 'all') && (
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setSearchQuery('');
+                  setDateFilter('all');
+                  setStatusFilter('all');
+                }}
+              >
+                Clear All Filters
+              </Button>
+            )}
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid gap-4">
-          {deliveryNotes.map((note) => (
+          {filteredNotes.map((note) => (
             <Card key={note.id} className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
               onClick={() => {
                 setCurrentNote(note);
