@@ -129,13 +129,13 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 pb-24">
       {/* Welcome Header */}
-      <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-xl">
+      <div className="rounded-2xl p-6 text-white shadow-xl" style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}>
         <div className="flex items-start justify-between mb-4">
           <div>
             <h1 className="text-2xl font-bold mb-1">
               Welcome, {user?.full_name?.split(' ')[0] || 'Operator'}
             </h1>
-            <p className="text-blue-100 text-sm">
+            <p className="text-sm" style={{ color: '#DBEAFE' }}>
               {isAdmin ? 'Manager Dashboard' : 'Operator Dashboard'}
             </p>
           </div>
@@ -158,7 +158,7 @@ export default function Dashboard() {
         </div>
         
         <Link to={createPageUrl('Scan')}>
-          <Button size="lg" className="w-full bg-white text-blue-600 hover:bg-blue-50 shadow-lg">
+          <Button size="lg" className="w-full shadow-lg hover:opacity-90" style={{ backgroundColor: '#FFFFFF', color: '#3B82F6' }}>
             <ScanBarcode className="w-5 h-5 mr-2" />
             Scan Barcode
           </Button>
@@ -170,31 +170,34 @@ export default function Dashboard() {
         <Card className="border-0 shadow-md">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Activity className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#DBEAFE' }}>
+                <Activity className="w-6 h-6" style={{ color: '#3B82F6' }} />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-900">{isAdmin ? wips.length : myWips.length}</p>
-                <p className="text-xs text-slate-500">{isAdmin ? 'All Active WIP' : 'My Active WIP'}</p>
+                <p className="text-2xl font-bold" style={{ color: '#1E293B' }}>{isAdmin ? wips.length : myWips.length}</p>
+                <p className="text-xs" style={{ color: '#64748B' }}>{isAdmin ? 'All Active WIP' : 'My Active WIP'}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Link to={createPageUrl('Reports')} className={lowStockParts.length + lowStockFixings.length > 0 ? '' : 'pointer-events-none'}>
-          <Card className={`border-0 shadow-md ${(lowStockParts.length + lowStockFixings.length) > 0 ? 'bg-red-50 border-2 border-red-200 hover:shadow-lg transition-all' : 'bg-slate-50'}`}>
+          <Card className={`border-0 shadow-md hover:shadow-lg transition-all`} 
+            style={(lowStockParts.length + lowStockFixings.length) > 0 ? { 
+              backgroundColor: '#FEF3C7', 
+              border: '2px solid #F59E0B' 
+            } : { backgroundColor: '#F8FAFC' }}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                  (lowStockParts.length + lowStockFixings.length) > 0 ? 'bg-red-100' : 'bg-slate-100'
-                }`}>
-                  <AlertTriangle className={`w-6 h-6 ${
-                    (lowStockParts.length + lowStockFixings.length) > 0 ? 'text-red-600 animate-pulse' : 'text-slate-400'
-                  }`} />
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center`}
+                  style={(lowStockParts.length + lowStockFixings.length) > 0 ? { backgroundColor: '#FED7AA' } : { backgroundColor: '#F1F5F9' }}>
+                  <AlertTriangle className={`w-6 h-6 ${(lowStockParts.length + lowStockFixings.length) > 0 ? 'animate-pulse' : ''}`}
+                    style={{ color: (lowStockParts.length + lowStockFixings.length) > 0 ? '#F59E0B' : '#CBD5E1' }} />
                 </div>
                 <div>
-                  <p className="text-xs text-slate-600 font-medium mb-0.5">Low Stock Alerts</p>
-                  <p className={`text-2xl font-bold ${(lowStockParts.length + lowStockFixings.length) > 0 ? 'text-red-600' : 'text-slate-400'}`}>
+                  <p className="text-xs font-medium mb-0.5" style={{ color: '#64748B' }}>Low Stock Alerts</p>
+                  <p className={`text-2xl font-bold`}
+                    style={{ color: (lowStockParts.length + lowStockFixings.length) > 0 ? '#F59E0B' : '#CBD5E1' }}>
                     {lowStockParts.length + lowStockFixings.length}
                   </p>
                 </div>
@@ -210,12 +213,12 @@ export default function Dashboard() {
           <Card className="border-0 shadow-md">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                  <Box className="w-6 h-6 text-green-600" />
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#D1FAE5' }}>
+                  <Box className="w-6 h-6" style={{ color: '#10B981' }} />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-slate-900">{totalStock.toLocaleString()}</p>
-                  <p className="text-xs text-slate-500">Total Stock</p>
+                  <p className="text-2xl font-bold" style={{ color: '#1E293B' }}>{totalStock.toLocaleString()}</p>
+                  <p className="text-xs" style={{ color: '#64748B' }}>Total Stock</p>
                 </div>
               </div>
             </CardContent>
@@ -224,12 +227,12 @@ export default function Dashboard() {
           <Card className="border-0 shadow-md">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-purple-600" />
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#E0E7FF' }}>
+                  <TrendingUp className="w-6 h-6" style={{ color: '#3B82F6' }} />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-slate-900">{totalWipQuantity.toLocaleString()}</p>
-                  <p className="text-xs text-slate-500">Units in WIP</p>
+                  <p className="text-2xl font-bold" style={{ color: '#1E293B' }}>{totalWipQuantity.toLocaleString()}</p>
+                  <p className="text-xs" style={{ color: '#64748B' }}>Units in WIP</p>
                 </div>
               </div>
             </CardContent>
@@ -239,51 +242,51 @@ export default function Dashboard() {
 
       {/* Low Stock Alerts */}
       {(lowStockParts.length > 0 || lowStockFixings.length > 0) && (
-        <Card className="border-0 shadow-md border-l-4 border-l-red-500">
+        <Card className="border-0 shadow-md border-l-4" style={{ borderLeftColor: '#F59E0B' }}>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2 text-red-600">
+            <CardTitle className="text-base flex items-center gap-2" style={{ color: '#F59E0B' }}>
               <AlertTriangle className="w-5 h-5" />
               Low Stock Alerts
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {lowStockParts.slice(0, 3).map((part) => (
-              <div key={part.id} className="flex items-center justify-between p-3 bg-red-50 rounded-xl">
+              <div key={part.id} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: '#FEF3C7' }}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                    <Package className="w-5 h-5 text-red-500" />
+                    <Package className="w-5 h-5" style={{ color: '#F59E0B' }} />
                   </div>
                   <div>
-                    <p className="font-medium text-slate-900 text-sm">{part.part_name}</p>
-                    <p className="text-xs text-slate-500">{part.part_number}</p>
+                    <p className="font-medium text-sm" style={{ color: '#1E293B' }}>{part.part_name}</p>
+                    <p className="text-xs" style={{ color: '#64748B' }}>{part.part_number}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-red-600">{part.finished_stock || 0}</p>
-                  <p className="text-xs text-slate-500">Min: {part.min_stock_level}</p>
+                  <p className="font-bold" style={{ color: '#F59E0B' }}>{part.finished_stock || 0}</p>
+                  <p className="text-xs" style={{ color: '#64748B' }}>Min: {part.min_stock_level}</p>
                 </div>
               </div>
             ))}
             {lowStockFixings.slice(0, 2).map((fixing) => (
-              <div key={fixing.id} className="flex items-center justify-between p-3 bg-red-50 rounded-xl">
+              <div key={fixing.id} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: '#FEF3C7' }}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                    <Wrench className="w-5 h-5 text-red-500" />
+                    <Wrench className="w-5 h-5" style={{ color: '#F59E0B' }} />
                   </div>
                   <div>
-                    <p className="font-medium text-slate-900 text-sm">{fixing.fixing_name}</p>
-                    <p className="text-xs text-slate-500">{fixing.sku}</p>
+                    <p className="font-medium text-sm" style={{ color: '#1E293B' }}>{fixing.fixing_name}</p>
+                    <p className="text-xs" style={{ color: '#64748B' }}>{fixing.sku}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-red-600">{fixing.current_stock || 0}</p>
-                  <p className="text-xs text-slate-500">Min: {fixing.min_stock_level}</p>
+                  <p className="font-bold" style={{ color: '#F59E0B' }}>{fixing.current_stock || 0}</p>
+                  <p className="text-xs" style={{ color: '#64748B' }}>Min: {fixing.min_stock_level}</p>
                 </div>
               </div>
             ))}
             {(lowStockParts.length + lowStockFixings.length) > 5 && (
               <Link to={createPageUrl('Reports')}>
-                <Button variant="ghost" className="w-full text-red-600">
+                <Button variant="ghost" className="w-full" style={{ color: '#F59E0B' }}>
                   View all {lowStockParts.length + lowStockFixings.length} alerts
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -298,11 +301,11 @@ export default function Dashboard() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
-              <Clock className="w-5 h-5 text-blue-600" />
+              <Clock className="w-5 h-5" style={{ color: '#3B82F6' }} />
               {isAdmin ? 'All Active WIP' : 'My Active WIP'}
             </CardTitle>
             <Link to={createPageUrl('MyWIP')}>
-              <Button variant="ghost" size="sm" className="text-blue-600">
+              <Button variant="ghost" size="sm" style={{ color: '#3B82F6' }}>
                 View All
                 <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
@@ -311,7 +314,7 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           {(isAdmin ? wips : myWips).length === 0 ? (
-            <div className="text-center py-8 text-slate-500">
+            <div className="text-center py-8" style={{ color: '#64748B' }}>
               <Activity className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p className="text-sm">No active work in progress</p>
               <Link to={createPageUrl('Scan')}>
@@ -324,18 +327,20 @@ export default function Dashboard() {
             <div className="space-y-3">
               {(isAdmin ? wips : myWips).slice(0, 5).map((wip) => (
                 <Link key={wip.id} to={createPageUrl(`MyWIP?wip=${wip.id}`)}>
-                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                  <div className="flex items-center justify-between p-3 rounded-xl transition-colors" style={{ backgroundColor: '#F8FAFC' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}>
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <Package className="w-5 h-5 text-blue-600" />
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#DBEAFE' }}>
+                        <Package className="w-5 h-5" style={{ color: '#3B82F6' }} />
                       </div>
                       <div>
-                        <p className="font-medium text-slate-900 text-sm">{wip.part_name}</p>
-                        <p className="text-xs text-slate-500">{wip.operation_name}</p>
+                        <p className="font-medium text-sm" style={{ color: '#1E293B' }}>{wip.part_name}</p>
+                        <p className="text-xs" style={{ color: '#64748B' }}>{wip.operation_name}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                      <Badge variant="secondary" style={{ backgroundColor: '#DBEAFE', color: '#1E40AF' }}>
                         {wip.quantity} {wip.unit || 'pcs'}
                       </Badge>
                     </div>
@@ -349,19 +354,23 @@ export default function Dashboard() {
 
       {/* Stock Take Actions */}
       <Link to={createPageUrl('PartialStockTake')}>
-        <Card className="border-0 shadow-md hover:shadow-xl transition-all bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200">
+        <Card className="border-0 shadow-md hover:shadow-xl transition-all border-2" 
+          style={{ 
+            background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
+            borderColor: '#93C5FD'
+          }}>
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center shadow-md" style={{ backgroundColor: '#3B82F6' }}>
                   <ClipboardCheck className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <p className="font-bold text-base text-blue-900">Start Partial Stock Take</p>
-                  <p className="text-sm text-blue-700">Quick cycle counting for accuracy</p>
+                  <p className="font-bold text-base" style={{ color: '#1E40AF' }}>Start Partial Stock Take</p>
+                  <p className="text-sm" style={{ color: '#2563EB' }}>Quick cycle counting for accuracy</p>
                 </div>
               </div>
-              <ArrowRight className="w-5 h-5 text-blue-600" />
+              <ArrowRight className="w-5 h-5" style={{ color: '#3B82F6' }} />
             </div>
           </CardContent>
         </Card>

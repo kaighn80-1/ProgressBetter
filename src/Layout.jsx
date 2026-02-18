@@ -87,9 +87,9 @@ export default function Layout({ children, currentPageName }) {
 
   const NavContent = () => (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-slate-700">
+      <div className="p-4 border-b" style={{ borderColor: '#475569' }}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#3B82F6' }}>
             <Package className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -109,14 +109,15 @@ export default function Layout({ children, currentPageName }) {
               onClick={() => setSidebarOpen(false)}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                 isActive 
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
+                  ? 'text-white shadow-lg' 
                   : 'text-slate-300 hover:bg-slate-700/50'
               }`}
+              style={isActive ? { backgroundColor: '#3B82F6' } : {}}
             >
               <item.icon className="w-5 h-5" />
               <span className="font-medium">{item.name}</span>
               {item.page === 'Dashboard' && lowStockCount > 0 && (
-                <Badge variant="destructive" className="ml-auto">
+                <Badge className="ml-auto font-bold" style={{ backgroundColor: '#F59E0B', color: '#1E293B' }}>
                   {lowStockCount}
                 </Badge>
               )}
@@ -126,7 +127,7 @@ export default function Layout({ children, currentPageName }) {
       </nav>
 
       {user && (
-        <div className="p-4 border-t border-slate-700">
+        <div className="p-4 border-t" style={{ borderColor: '#475569' }}>
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center">
               <User className="w-5 h-5 text-slate-300" />
@@ -153,19 +154,120 @@ export default function Layout({ children, currentPageName }) {
   );
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen" style={{ backgroundColor: '#F1F5F9' }}>
       <style>{`
         :root {
+          /* Primary - Brand/Focus (Blue) */
           --primary: 217 91% 60%;
+          --primary-rgb: 59, 130, 246;
+          --primary-hover: 221 83% 53%;
           --primary-foreground: 0 0% 100%;
+          
+          /* Secondary - Balance/Restore (Green) */
+          --secondary: 160 84% 39%;
+          --secondary-rgb: 16, 185, 129;
+          --secondary-foreground: 0 0% 100%;
+          
+          /* Accent - Energy/Warning (Amber) */
+          --accent: 38 92% 50%;
+          --accent-rgb: 245, 158, 11;
+          --accent-foreground: 220 13% 13%;
+          
+          /* Success */
+          --success: 160 84% 39%;
+          --success-foreground: 0 0% 100%;
+          
+          /* Warning */
+          --warning: 38 92% 50%;
+          --warning-foreground: 220 13% 13%;
+          
+          /* Error/Danger */
+          --destructive: 0 84% 60%;
+          --destructive-foreground: 0 0% 100%;
+          
+          /* Neutral Backgrounds */
+          --background: 214 32% 96%;
+          --surface: 0 0% 100%;
+          --card: 0 0% 100%;
+          --card-foreground: 220 13% 13%;
+          
+          /* Borders & Dividers */
+          --border: 214 32% 91%;
+          --input: 214 32% 91%;
+          --ring: 217 91% 60%;
+          
+          /* Text Colors */
+          --foreground: 220 13% 13%;
+          --muted-foreground: 215 16% 47%;
+          --popover-foreground: 220 13% 13%;
+          
+          /* Other */
+          --muted: 210 40% 96%;
+          --popover: 0 0% 100%;
+          --radius: 0.75rem;
+        }
+        
+        body {
+          background-color: #F1F5F9;
+          color: #1E293B;
+        }
+        
+        /* Global Button Styles */
+        .btn-primary {
+          background-color: #3B82F6;
+          color: white;
+        }
+        .btn-primary:hover {
+          background-color: #2563EB;
+        }
+        
+        .btn-secondary {
+          background-color: #10B981;
+          color: white;
+        }
+        .btn-secondary:hover {
+          background-color: #059669;
+        }
+        
+        .btn-accent {
+          background-color: #F59E0B;
+          color: #1E293B;
+        }
+        .btn-accent:hover {
+          background-color: #D97706;
+        }
+        
+        /* Card & Surface Styles */
+        .card-surface {
+          background-color: #FFFFFF;
+          border: 1px solid #E2E8F0;
+        }
+        
+        /* Alert Styles */
+        .alert-warning {
+          background-color: #FEF3C7;
+          border-color: #F59E0B;
+          color: #92400E;
+        }
+        
+        .alert-success {
+          background-color: #D1FAE5;
+          border-color: #10B981;
+          color: #065F46;
+        }
+        
+        .alert-error {
+          background-color: #FEE2E2;
+          border-color: #EF4444;
+          color: #991B1B;
         }
       `}</style>
       
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-slate-900 shadow-lg">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 shadow-lg" style={{ backgroundColor: '#1E293B' }}>
         <div className="flex items-center justify-between px-4 h-16">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#3B82F6' }}>
               <Package className="w-5 h-5 text-white" />
             </div>
             <span className="font-bold text-white">Progress Better</span>
@@ -174,7 +276,7 @@ export default function Layout({ children, currentPageName }) {
           <div className="flex items-center gap-2">
             {lowStockCount > 0 && (
               <Link to={createPageUrl('Dashboard')}>
-                <Badge variant="destructive" className="flex items-center gap-1">
+                <Badge className="flex items-center gap-1 font-bold" style={{ backgroundColor: '#F59E0B', color: '#1E293B' }}>
                   <AlertTriangle className="w-3 h-3" />
                   {lowStockCount}
                 </Badge>
@@ -195,7 +297,7 @@ export default function Layout({ children, currentPageName }) {
       </header>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-72 bg-slate-900 flex-col z-50">
+      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-72 flex-col z-50" style={{ backgroundColor: '#1E293B' }}>
         <NavContent />
       </aside>
 
@@ -207,7 +309,7 @@ export default function Layout({ children, currentPageName }) {
       </main>
 
       {/* Mobile Bottom Nav */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 safe-area-pb">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white z-50 safe-area-pb" style={{ borderTop: '1px solid #E2E8F0' }}>
         <div className="flex justify-around items-center h-16">
           {operatorNavItems.map((item) => {
             const isActive = currentPageName === item.page;
@@ -215,9 +317,8 @@ export default function Layout({ children, currentPageName }) {
               <Link
                 key={item.page}
                 to={createPageUrl(item.page)}
-                className={`flex flex-col items-center justify-center py-2 px-4 ${
-                  isActive ? 'text-blue-600' : 'text-slate-400'
-                }`}
+                className={`flex flex-col items-center justify-center py-2 px-4`}
+                style={{ color: isActive ? '#3B82F6' : '#94A3B8' }}
               >
                 <item.icon className={`w-6 h-6 ${item.page === 'Scan' ? 'w-7 h-7' : ''}`} />
                 <span className="text-xs mt-1 font-medium">{item.name}</span>
@@ -227,9 +328,8 @@ export default function Layout({ children, currentPageName }) {
           {isAdmin && (
             <Link
               to={createPageUrl('Parts')}
-              className={`flex flex-col items-center justify-center py-2 px-4 ${
-                currentPageName === 'Parts' ? 'text-blue-600' : 'text-slate-400'
-              }`}
+              className={`flex flex-col items-center justify-center py-2 px-4`}
+              style={{ color: currentPageName === 'Parts' ? '#3B82F6' : '#94A3B8' }}
             >
               <Package className="w-6 h-6" />
               <span className="text-xs mt-1 font-medium">Parts</span>
