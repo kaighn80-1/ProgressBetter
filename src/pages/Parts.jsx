@@ -46,6 +46,7 @@ export default function Parts() {
   const [deletingPart, setDeletingPart] = useState(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [user, setUser] = useState(null);
   
   const [form, setForm] = useState({
     part_name: '',
@@ -67,12 +68,25 @@ export default function Parts() {
     finish_type: '',
     assembly_number: '',
     location: '',
-    required_fixings: []
+    required_fixings: [],
+    allow_sym_opp: false,
+    lh_notes: '',
+    rh_notes: ''
   });
 
   useEffect(() => {
     loadParts();
+    loadUser();
   }, []);
+
+  const loadUser = async () => {
+    try {
+      const userData = await base44.auth.me();
+      setUser(userData);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const loadParts = async () => {
     try {
@@ -126,7 +140,10 @@ export default function Parts() {
       finish_type: '',
       assembly_number: '',
       location: '',
-      required_fixings: []
+      required_fixings: [],
+      allow_sym_opp: false,
+      lh_notes: '',
+      rh_notes: ''
     });
     setShowDialog(true);
   };
@@ -153,7 +170,10 @@ export default function Parts() {
       finish_type: part.finish_type || '',
       assembly_number: part.assembly_number || '',
       location: part.location || '',
-      required_fixings: part.required_fixings || []
+      required_fixings: part.required_fixings || [],
+      allow_sym_opp: part.allow_sym_opp || false,
+      lh_notes: part.lh_notes || '',
+      rh_notes: part.rh_notes || ''
     });
     setShowDialog(true);
   };
@@ -760,6 +780,54 @@ export default function Parts() {
                   Add Fixing
                 </Button>
               </div>
+
+              {(user?.role === 'admin' || user?.role === 'supervisor') && (
+                <>
+                  <div className="col-span-2 pt-4 border-t">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="allow_sym_opp"
+                        checked={form.allow_sym_opp}
+                        onChange={(e) => setForm({ ...form, allow_sym_opp: e.target.checked })}
+                        className="w-4 h-4 rounded border-slate-300"
+                      />
+                      <Label htmlFor="allow_sym_opp" className="cursor-pointer font-medium">
+                        Allow Symmetric Opposite (LH/RH variants)
+                      </Label>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1 ml-6">
+                      Check if this blank part can be processed into Left Hand (LH) or Right Hand (RH) version
+                    </p>
+                  </div>
+
+                  {form.allow_sym_opp && (
+                    <>
+                      <div className="col-span-2">
+                        <Label>LH Notes (Left Hand variant)</Label>
+                        <Textarea
+                          value={form.lh_notes}
+                          onChange={(e) => setForm({ ...form, lh_notes: e.target.value })}
+                          placeholder="Notes for processing as Left Hand variant..."
+                          className="mt-1"
+                          rows={3}
+                        />
+                      </div>
+
+                      <div className="col-span-2">
+                        <Label>RH Notes (Right Hand variant)</Label>
+                        <Textarea
+                          value={form.rh_notes}
+                          onChange={(e) => setForm({ ...form, rh_notes: e.target.value })}
+                          placeholder="Notes for processing as Right Hand variant..."
+                          className="mt-1"
+                          rows={3}
+                        />
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
             </div>
           </div>
 

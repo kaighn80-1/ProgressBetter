@@ -51,6 +51,7 @@ import Dashboard from './pages/Dashboard';
 import DeliveryNotes from './pages/DeliveryNotes';
 import Fixings from './pages/Fixings';
 import FullStockTake from './pages/FullStockTake';
+import FullStockTakeReport from './pages/FullStockTakeReport';
 import MyWIP from './pages/MyWIP';
 import Operations from './pages/Operations';
 import PartialStockTake from './pages/PartialStockTake';
@@ -61,7 +62,6 @@ import Reports from './pages/Reports';
 import Requirements from './pages/Requirements';
 import Scan from './pages/Scan';
 import Sections from './pages/Sections';
-import FullStockTakeReport from './pages/FullStockTakeReport';
 import __Layout from './Layout.jsx';
 
 
@@ -70,6 +70,7 @@ export const PAGES = {
     "DeliveryNotes": DeliveryNotes,
     "Fixings": Fixings,
     "FullStockTake": FullStockTake,
+    "FullStockTakeReport": FullStockTakeReport,
     "MyWIP": MyWIP,
     "Operations": Operations,
     "PartialStockTake": PartialStockTake,
@@ -80,7 +81,6 @@ export const PAGES = {
     "Requirements": Requirements,
     "Scan": Scan,
     "Sections": Sections,
-    "FullStockTakeReport": FullStockTakeReport,
 }
 
 export const pagesConfig = {
