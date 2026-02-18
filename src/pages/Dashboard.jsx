@@ -20,7 +20,9 @@ import {
   ShieldCheck,
   ClipboardCheck,
   ClipboardList,
-  Wrench
+  Wrench,
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -128,12 +130,32 @@ export default function Dashboard() {
     <div className="space-y-6 pb-24">
       {/* Welcome Header */}
       <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-xl">
-        <h1 className="text-2xl font-bold mb-1">
-          Welcome, {user?.full_name?.split(' ')[0] || 'Operator'}
-        </h1>
-        <p className="text-blue-100 text-sm mb-4">
-          {isAdmin ? 'Manager Dashboard' : 'Operator Dashboard'}
-        </p>
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h1 className="text-2xl font-bold mb-1">
+              Welcome, {user?.full_name?.split(' ')[0] || 'Operator'}
+            </h1>
+            <p className="text-blue-100 text-sm">
+              {isAdmin ? 'Manager Dashboard' : 'Operator Dashboard'}
+            </p>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => {
+              setLoading(true);
+              loadData();
+            }}
+            disabled={loading}
+            className="text-white hover:bg-white/20"
+          >
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <RefreshCw className="w-5 h-5" />
+            )}
+          </Button>
+        </div>
         
         <Link to={createPageUrl('Scan')}>
           <Button size="lg" className="w-full bg-white text-blue-600 hover:bg-blue-50 shadow-lg">
@@ -159,23 +181,27 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className={`border-0 shadow-md ${(lowStockParts.length + lowStockFixings.length) > 0 ? 'bg-red-50' : ''}`}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                (lowStockParts.length + lowStockFixings.length) > 0 ? 'bg-red-100' : 'bg-amber-100'
-              }`}>
-                <AlertTriangle className={`w-6 h-6 ${
-                  (lowStockParts.length + lowStockFixings.length) > 0 ? 'text-red-600' : 'text-amber-600'
-                }`} />
+        <Link to={createPageUrl('Reports')} className={lowStockParts.length + lowStockFixings.length > 0 ? '' : 'pointer-events-none'}>
+          <Card className={`border-0 shadow-md ${(lowStockParts.length + lowStockFixings.length) > 0 ? 'bg-red-50 border-2 border-red-200 hover:shadow-lg transition-all' : 'bg-slate-50'}`}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  (lowStockParts.length + lowStockFixings.length) > 0 ? 'bg-red-100' : 'bg-slate-100'
+                }`}>
+                  <AlertTriangle className={`w-6 h-6 ${
+                    (lowStockParts.length + lowStockFixings.length) > 0 ? 'text-red-600 animate-pulse' : 'text-slate-400'
+                  }`} />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-600 font-medium mb-0.5">Low Stock Alerts</p>
+                  <p className={`text-2xl font-bold ${(lowStockParts.length + lowStockFixings.length) > 0 ? 'text-red-600' : 'text-slate-400'}`}>
+                    {lowStockParts.length + lowStockFixings.length}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{lowStockParts.length + lowStockFixings.length}</p>
-                <p className="text-xs text-slate-500">Low Stock Alerts</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Manager Stats */}
@@ -322,36 +348,43 @@ export default function Dashboard() {
       </Card>
 
       {/* Stock Take Actions */}
-      <div className="grid grid-cols-2 gap-4">
-        <Link to={createPageUrl('PartialStockTake')}>
-          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <ClipboardCheck className="w-5 h-5 text-blue-600" />
+      <Link to={createPageUrl('PartialStockTake')}>
+        <Card className="border-0 shadow-md hover:shadow-xl transition-all bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                  <ClipboardCheck className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <p className="font-bold text-base text-blue-900">Start Partial Stock Take</p>
+                  <p className="text-sm text-blue-700">Quick cycle counting for accuracy</p>
+                </div>
               </div>
-              <div>
-                <p className="font-medium text-sm">Cycle Count</p>
-                <p className="text-xs text-slate-500">Partial stock take</p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-        {isAdmin && (
-          <Link to={createPageUrl('FullStockTake')}>
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4 flex items-center gap-3">
+              <ArrowRight className="w-5 h-5 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
+
+      {isAdmin && (
+        <Link to={createPageUrl('FullStockTake')}>
+          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
                   <ClipboardList className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <p className="font-medium text-sm">Full Count</p>
-                  <p className="text-xs text-slate-500">Complete inventory</p>
+                  <p className="font-medium text-sm">Full Stock Count</p>
+                  <p className="text-xs text-slate-500">Complete inventory check</p>
                 </div>
-              </CardContent>
-            </Card>
-          </Link>
-        )}
-      </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-slate-400" />
+            </CardContent>
+          </Card>
+        </Link>
+      )}
 
       {/* Quick Actions for Admin */}
       {isAdmin && (
