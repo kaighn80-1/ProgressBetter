@@ -52,8 +52,8 @@ export default function Scan() {
   const [showWipDialog, setShowWipDialog] = useState(false);
   const [showAddStockDialog, setShowAddStockDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-  const [wipForm, setWipForm] = useState({ operation_id: '', quantity: '', notes: '' });
-  const [addStockForm, setAddStockForm] = useState({ quantity: '', notes: '' });
+  const [wipForm, setWipForm] = useState({ operation_id: '', quantity: '', notes: '', variant: '' });
+  const [addStockForm, setAddStockForm] = useState({ quantity: '', notes: '', variant: '' });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -204,9 +204,15 @@ export default function Scan() {
       return;
     }
 
+    if (scannedPart.allow_sym_opp && !wipForm.variant) {
+      toast.error('Please select LH or RH variant');
+      return;
+    }
+
     setSaving(true);
     try {
       const operation = operations.find(o => o.id === wipForm.operation_id);
+      const qty = parseInt(wipForm.quantity);
       
       await base44.entities.WorkInProgress.create({
         part_id: scannedPart.id,
@@ -214,7 +220,8 @@ export default function Scan() {
         part_barcode: scannedPart.barcode,
         operation_id: wipForm.operation_id,
         operation_name: operation?.operation_name,
-        quantity: parseInt(wipForm.quantity),
+        quantity: qty,
+        variant: scannedPart.allow_sym_opp ? wipForm.variant : 'none',
         started_date: new Date().toISOString(),
         worker_email: user?.email,
         worker_name: user?.full_name,
@@ -227,21 +234,30 @@ export default function Scan() {
         part_id: scannedPart.id,
         part_name: scannedPart.part_name,
         transaction_type: 'moved_to_wip',
-        quantity_change: -parseInt(wipForm.quantity),
+        quantity_change: -qty,
         operation_name: operation?.operation_name,
         user_email: user?.email,
         user_name: user?.full_name,
         notes: wipForm.notes
       });
 
-      // Deduct from finished stock
-      await base44.entities.Part.update(scannedPart.id, {
-        finished_stock: Math.max(0, (scannedPart.finished_stock || 0) - parseInt(wipForm.quantity))
-      });
+      // Deduct from appropriate stock
+      if (scannedPart.allow_sym_opp) {
+        const stockField = wipForm.variant === 'LH' ? 'lh_stock' : 'rh_stock';
+        await base44.entities.Part.update(scannedPart.id, {
+          [stockField]: Math.max(0, (scannedPart[stockField] || 0) - qty)
+        });
+      } else {
+        await base44.entities.Part.update(scannedPart.id, {
+          finished_stock: Math.max(0, (scannedPart.finished_stock || 0) - qty)
+        });
+      }
 
-      toast.success('WIP batch started!');
+      toast.success('WIP batch started!', {
+        description: scannedPart.allow_sym_opp ? `${wipForm.variant} variant` : undefined
+      });
       setShowWipDialog(false);
-      setWipForm({ operation_id: '', quantity: '', notes: '' });
+      setWipForm({ operation_id: '', quantity: '', notes: '', variant: '' });
       
       // Navigate to My WIP
       navigate(createPageUrl('MyWIP'));
@@ -259,27 +275,43 @@ export default function Scan() {
       return;
     }
 
+    if (scannedPart.allow_sym_opp && !addStockForm.variant) {
+      toast.error('Please select LH or RH variant');
+      return;
+    }
+
     setSaving(true);
     try {
-      const newStock = (scannedPart.finished_stock || 0) + parseInt(addStockForm.quantity);
+      const qty = parseInt(addStockForm.quantity);
       
-      await base44.entities.Part.update(scannedPart.id, {
-        finished_stock: newStock
-      });
+      if (scannedPart.allow_sym_opp) {
+        const stockField = addStockForm.variant === 'LH' ? 'lh_stock' : 'rh_stock';
+        const newStock = (scannedPart[stockField] || 0) + qty;
+        await base44.entities.Part.update(scannedPart.id, {
+          [stockField]: newStock
+        });
+      } else {
+        const newStock = (scannedPart.finished_stock || 0) + qty;
+        await base44.entities.Part.update(scannedPart.id, {
+          finished_stock: newStock
+        });
+      }
 
       await base44.entities.StockTransaction.create({
         part_id: scannedPart.id,
         part_name: scannedPart.part_name,
         transaction_type: 'added_to_stock',
-        quantity_change: parseInt(addStockForm.quantity),
+        quantity_change: qty,
         user_email: user?.email,
         user_name: user?.full_name,
         notes: addStockForm.notes
       });
 
-      toast.success('Stock updated!', { description: `New total: ${newStock} ${scannedPart.unit || 'pcs'}` });
+      toast.success('Stock updated!', {
+        description: scannedPart.allow_sym_opp ? `${addStockForm.variant} variant` : undefined
+      });
       setShowAddStockDialog(false);
-      setAddStockForm({ quantity: '', notes: '' });
+      setAddStockForm({ quantity: '', notes: '', variant: '' });
       
       // Refresh part data
       const updatedPart = await base44.entities.Part.filter({ id: scannedPart.id });
@@ -539,28 +571,63 @@ export default function Scan() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Stock Level */}
-              <div className={`p-4 rounded-xl ${isLowStock ? 'bg-red-50' : 'bg-green-50'}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-slate-600">Finished Stock</span>
-                  {isLowStock && (
-                    <Badge variant="destructive" className="flex items-center gap-1 animate-pulse">
-                      <AlertTriangle className="w-3 h-3" />
-                      Low Stock
-                    </Badge>
+              {scannedPart.allow_sym_opp ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-700">Symmetric Opposite Stock</span>
+                    {isLowStock && (
+                      <Badge variant="destructive" className="flex items-center gap-1 animate-pulse">
+                        <AlertTriangle className="w-3 h-3" />
+                        Low Stock
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 rounded-xl bg-blue-50 border-2 border-blue-200">
+                      <div className="text-xs text-blue-700 mb-1 font-medium">Left Hand (LH)</div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-blue-600">{scannedPart.lh_stock || 0}</span>
+                        <span className="text-sm text-blue-600">{scannedPart.unit || 'pcs'}</span>
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-xl bg-blue-50 border-2 border-blue-200">
+                      <div className="text-xs text-blue-700 mb-1 font-medium">Right Hand (RH)</div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-blue-600">{scannedPart.rh_stock || 0}</span>
+                        <span className="text-sm text-blue-600">{scannedPart.unit || 'pcs'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {scannedPart.min_stock_level && (
+                    <p className="text-xs text-slate-500">
+                      Min: {scannedPart.min_stock_level} | Reorder: {scannedPart.reorder_quantity || '-'}
+                    </p>
                   )}
                 </div>
-                <div className="flex items-baseline gap-2">
-                  <span className={`text-4xl font-bold ${isLowStock ? 'text-red-600' : 'text-green-600'}`}>
-                    {scannedPart.finished_stock || 0}
-                  </span>
-                  <span className="text-lg text-slate-600">{scannedPart.unit || 'pcs'}</span>
+              ) : (
+                <div className={`p-4 rounded-xl ${isLowStock ? 'bg-red-50' : 'bg-green-50'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-slate-600">Finished Stock</span>
+                    {isLowStock && (
+                      <Badge variant="destructive" className="flex items-center gap-1 animate-pulse">
+                        <AlertTriangle className="w-3 h-3" />
+                        Low Stock
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className={`text-4xl font-bold ${isLowStock ? 'text-red-600' : 'text-green-600'}`}>
+                      {scannedPart.finished_stock || 0}
+                    </span>
+                    <span className="text-lg text-slate-600">{scannedPart.unit || 'pcs'}</span>
+                  </div>
+                  {scannedPart.min_stock_level && (
+                    <p className="text-xs text-slate-500 mt-2">
+                      Min: {scannedPart.min_stock_level} | Reorder: {scannedPart.reorder_quantity || '-'}
+                    </p>
+                  )}
                 </div>
-                {scannedPart.min_stock_level && (
-                  <p className="text-xs text-slate-500 mt-2">
-                    Min: {scannedPart.min_stock_level} | Reorder: {scannedPart.reorder_quantity || '-'}
-                  </p>
-                )}
-              </div>
+              )}
 
               {/* Part Details */}
               <div className="grid grid-cols-2 gap-3">
@@ -703,6 +770,44 @@ export default function Scan() {
             <DialogTitle>Start WIP Batch</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {scannedPart?.allow_sym_opp && (
+              <div>
+                <Label className="text-base font-semibold">Process As *</Label>
+                <p className="text-xs text-slate-500 mb-3">Select variant for this batch</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setWipForm({ ...wipForm, variant: 'LH' })}
+                    className={`h-20 rounded-xl border-2 font-semibold transition-all ${
+                      wipForm.variant === 'LH'
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
+                        : 'bg-white border-slate-200 text-slate-700 hover:border-blue-400'
+                    }`}
+                  >
+                    <div className="text-lg">Left Hand</div>
+                    <div className="text-sm opacity-80">(LH)</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWipForm({ ...wipForm, variant: 'RH' })}
+                    className={`h-20 rounded-xl border-2 font-semibold transition-all ${
+                      wipForm.variant === 'RH'
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
+                        : 'bg-white border-slate-200 text-slate-700 hover:border-blue-400'
+                    }`}
+                  >
+                    <div className="text-lg">Right Hand</div>
+                    <div className="text-sm opacity-80">(RH)</div>
+                  </button>
+                </div>
+                {wipForm.variant && scannedPart[wipForm.variant === 'LH' ? 'lh_notes' : 'rh_notes'] && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-xs font-medium text-blue-700 mb-1">{wipForm.variant} Processing Notes:</p>
+                    <p className="text-sm text-blue-900">{scannedPart[wipForm.variant === 'LH' ? 'lh_notes' : 'rh_notes']}</p>
+                  </div>
+                )}
+              </div>
+            )}
             <div>
               <Label>Operation / Process</Label>
               <Select 
@@ -781,6 +886,38 @@ export default function Scan() {
             <DialogTitle>Add to Stock</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {scannedPart?.allow_sym_opp && (
+              <div>
+                <Label className="text-base font-semibold">Add to Stock As *</Label>
+                <p className="text-xs text-slate-500 mb-3">Select variant</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setAddStockForm({ ...addStockForm, variant: 'LH' })}
+                    className={`h-20 rounded-xl border-2 font-semibold transition-all ${
+                      addStockForm.variant === 'LH'
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
+                        : 'bg-white border-slate-200 text-slate-700 hover:border-blue-400'
+                    }`}
+                  >
+                    <div className="text-lg">Left Hand</div>
+                    <div className="text-sm opacity-80">(LH)</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAddStockForm({ ...addStockForm, variant: 'RH' })}
+                    className={`h-20 rounded-xl border-2 font-semibold transition-all ${
+                      addStockForm.variant === 'RH'
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
+                        : 'bg-white border-slate-200 text-slate-700 hover:border-blue-400'
+                    }`}
+                  >
+                    <div className="text-lg">Right Hand</div>
+                    <div className="text-sm opacity-80">(RH)</div>
+                  </button>
+                </div>
+              </div>
+            )}
             <div>
               <Label>Quantity to Add</Label>
               <Input
