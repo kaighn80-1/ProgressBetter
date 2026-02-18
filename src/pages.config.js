@@ -48,34 +48,34 @@
  * The mainPage value must match a key in the PAGES object exactly.
  */
 import Dashboard from './pages/Dashboard';
+import Fixings from './pages/Fixings';
+import FullStockTake from './pages/FullStockTake';
 import MyWIP from './pages/MyWIP';
 import Operations from './pages/Operations';
+import PartialStockTake from './pages/PartialStockTake';
 import Parts from './pages/Parts';
 import ProjectDetail from './pages/ProjectDetail';
 import Projects from './pages/Projects';
 import Reports from './pages/Reports';
 import Requirements from './pages/Requirements';
 import Scan from './pages/Scan';
-import Fixings from './pages/Fixings';
-import PartialStockTake from './pages/PartialStockTake';
-import FullStockTake from './pages/FullStockTake';
 import Sections from './pages/Sections';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Dashboard": Dashboard,
+    "Fixings": Fixings,
+    "FullStockTake": FullStockTake,
     "MyWIP": MyWIP,
     "Operations": Operations,
+    "PartialStockTake": PartialStockTake,
     "Parts": Parts,
     "ProjectDetail": ProjectDetail,
     "Projects": Projects,
     "Reports": Reports,
     "Requirements": Requirements,
     "Scan": Scan,
-    "Fixings": Fixings,
-    "PartialStockTake": PartialStockTake,
-    "FullStockTake": FullStockTake,
     "Sections": Sections,
 }
 

@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Link, useNavigate } from 'react-router-dom';
-import BarcodeScanner from '@/components/scanner/BarcodeScanner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,12 +21,23 @@ import {
   Check,
   Loader2,
   Search,
-  Activity
+  Activity,
+  Camera,
+  Wrench,
+  Hammer,
+  Palette,
+  Boxes,
+  MapPin,
+  Sparkles
 } from 'lucide-react';
 
 export default function Scan() {
   const navigate = useNavigate();
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  
   const [showScanner, setShowScanner] = useState(false);
+  const [manualEntry, setManualEntry] = useState('');
   const [scannedPart, setScannedPart] = useState(null);
   const [operations, setOperations] = useState([]);
   const [activeWips, setActiveWips] = useState([]);
@@ -36,10 +46,12 @@ export default function Scan() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [cameraError, setCameraError] = useState(false);
 
   // Action dialogs
   const [showWipDialog, setShowWipDialog] = useState(false);
   const [showAddStockDialog, setShowAddStockDialog] = useState(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [wipForm, setWipForm] = useState({ operation_id: '', quantity: '', notes: '' });
   const [addStockForm, setAddStockForm] = useState({ quantity: '', notes: '' });
   const [saving, setSaving] = useState(false);
@@ -61,14 +73,68 @@ export default function Scan() {
     }
   };
 
+  const startCamera = async () => {
+    setCameraError(false);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+      }
+    } catch (err) {
+      console.error('Camera error:', err);
+      setCameraError(true);
+      toast.error('Camera access denied', { description: 'Use manual entry below' });
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+  };
+
+  const vibrateDevice = () => {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(200);
+    }
+  };
+
+  const playSuccessSound = () => {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.2);
+  };
+
   const handleScan = async (barcode) => {
+    stopCamera();
     setShowScanner(false);
+    setManualEntry('');
     setLoading(true);
+
+    vibrateDevice();
 
     try {
       const parts = await base44.entities.Part.filter({ barcode: barcode });
       if (parts.length === 0) {
-        toast.error('Part not found', { description: `No part with barcode: ${barcode}` });
+        toast.error('Part not found', { 
+          description: `No part with barcode: ${barcode}`,
+          duration: 5000
+        });
         setScannedPart(null);
       } else {
         const part = parts[0];
@@ -81,13 +147,23 @@ export default function Scan() {
         });
         setActiveWips(wips);
         
-        toast.success('Part found!', { description: part.part_name });
+        playSuccessSound();
+        toast.success('✓ Part Found!', { 
+          description: part.part_name,
+          duration: 4000
+        });
       }
     } catch (e) {
       console.error(e);
       toast.error('Error looking up part');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleManualScan = () => {
+    if (manualEntry.trim()) {
+      handleScan(manualEntry.trim());
     }
   };
 
@@ -223,23 +299,80 @@ export default function Scan() {
 
   return (
     <div className="space-y-6 pb-24">
+      {/* Camera Scanner Dialog */}
       {showScanner && (
-        <BarcodeScanner
-          onScan={handleScan}
-          onClose={() => setShowScanner(false)}
-        />
+        <div className="fixed inset-0 z-50 bg-black">
+          <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
+            <h2 className="text-white font-bold text-lg">Scan Barcode</h2>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => {
+                stopCamera();
+                setShowScanner(false);
+              }}
+              className="text-white hover:bg-white/20"
+            >
+              <X className="w-6 h-6" />
+            </Button>
+          </div>
+          
+          <video 
+            ref={videoRef}
+            autoPlay
+            playsInline
+            className="w-full h-full object-cover"
+            onLoadedMetadata={startCamera}
+          />
+          
+          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
+            <div className="space-y-4">
+              <p className="text-white text-center text-sm">Position barcode within frame</p>
+              
+              {cameraError && (
+                <div className="bg-amber-500/90 text-white p-3 rounded-lg text-sm">
+                  <p className="font-medium">Camera not available</p>
+                  <p className="text-xs mt-1">Use manual entry below</p>
+                </div>
+              )}
+              
+              <div className="flex gap-2">
+                <Input
+                  value={manualEntry}
+                  onChange={(e) => setManualEntry(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleManualScan()}
+                  placeholder="Or type barcode manually..."
+                  className="h-14 text-lg bg-white/90"
+                />
+                <Button 
+                  onClick={handleManualScan}
+                  disabled={!manualEntry.trim()}
+                  className="h-14 px-6 bg-blue-600 hover:bg-blue-700"
+                >
+                  <Check className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Scan Button */}
       <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-600 to-blue-700">
         <CardContent className="p-6">
           <Button 
-            onClick={() => setShowScanner(true)}
+            onClick={() => {
+              setShowScanner(true);
+              setCameraError(false);
+            }}
             size="lg"
-            className="w-full h-20 text-xl bg-white text-blue-600 hover:bg-blue-50 shadow-lg"
+            className="w-full h-24 text-xl bg-white text-blue-600 hover:bg-blue-50 shadow-lg"
           >
-            <ScanBarcode className="w-8 h-8 mr-3" />
-            Scan Barcode
+            <Camera className="w-10 h-10 mr-3" />
+            <div className="text-left">
+              <div className="font-bold">Scan Barcode</div>
+              <div className="text-sm font-normal">Camera or manual entry</div>
+            </div>
           </Button>
         </CardContent>
       </Card>
@@ -329,26 +462,85 @@ export default function Scan() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Stock Level */}
-              <div className={`p-4 rounded-xl ${isLowStock ? 'bg-red-50' : 'bg-slate-50'}`}>
+              <div className={`p-4 rounded-xl ${isLowStock ? 'bg-red-50' : 'bg-green-50'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-slate-600">Finished Stock</span>
                   {isLowStock && (
-                    <Badge variant="destructive" className="flex items-center gap-1">
+                    <Badge variant="destructive" className="flex items-center gap-1 animate-pulse">
                       <AlertTriangle className="w-3 h-3" />
                       Low Stock
                     </Badge>
                   )}
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className={`text-3xl font-bold ${isLowStock ? 'text-red-600' : 'text-slate-900'}`}>
+                  <span className={`text-4xl font-bold ${isLowStock ? 'text-red-600' : 'text-green-600'}`}>
                     {scannedPart.finished_stock || 0}
                   </span>
-                  <span className="text-slate-500">{scannedPart.unit || 'pcs'}</span>
+                  <span className="text-lg text-slate-600">{scannedPart.unit || 'pcs'}</span>
                 </div>
                 {scannedPart.min_stock_level && (
-                  <p className="text-xs text-slate-500 mt-1">
-                    Min level: {scannedPart.min_stock_level} | Reorder: {scannedPart.reorder_quantity || '-'}
+                  <p className="text-xs text-slate-500 mt-2">
+                    Min: {scannedPart.min_stock_level} | Reorder: {scannedPart.reorder_quantity || '-'}
                   </p>
+                )}
+              </div>
+
+              {/* Part Details */}
+              <div className="grid grid-cols-2 gap-3">
+                {scannedPart.location && (
+                  <div className="p-3 bg-slate-50 rounded-lg">
+                    <div className="flex items-center gap-2 text-slate-600 text-xs mb-1">
+                      <MapPin className="w-3 h-3" />
+                      Location
+                    </div>
+                    <p className="text-sm font-medium text-slate-900">{scannedPart.location}</p>
+                  </div>
+                )}
+                {scannedPart.project_name && (
+                  <div className="p-3 bg-slate-50 rounded-lg">
+                    <div className="flex items-center gap-2 text-slate-600 text-xs mb-1">
+                      <Boxes className="w-3 h-3" />
+                      Project
+                    </div>
+                    <p className="text-sm font-medium text-slate-900">{scannedPart.project_name}</p>
+                  </div>
+                )}
+                {scannedPart.tooling_required && (
+                  <div className="p-3 bg-amber-50 rounded-lg col-span-2">
+                    <div className="flex items-center gap-2 text-amber-700 text-xs mb-1">
+                      <Hammer className="w-3 h-3" />
+                      Tooling Required
+                    </div>
+                    <p className="text-sm font-medium text-amber-900">{scannedPart.tooling_required}</p>
+                    {scannedPart.tooling_location && (
+                      <p className="text-xs text-amber-600 mt-1">📍 {scannedPart.tooling_location}</p>
+                    )}
+                  </div>
+                )}
+                {scannedPart.required_fixings?.length > 0 && (
+                  <div className="p-3 bg-blue-50 rounded-lg col-span-2">
+                    <div className="flex items-center gap-2 text-blue-700 text-xs mb-2">
+                      <Wrench className="w-3 h-3" />
+                      Fixings Required (per unit)
+                    </div>
+                    <div className="space-y-1">
+                      {scannedPart.required_fixings.map((rf, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-sm">
+                          <span className="text-blue-900">{rf.fixing_name}</span>
+                          <span className="font-medium text-blue-700">{rf.quantity_per_unit}x</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {scannedPart.finish_type && (
+                  <div className="p-3 bg-purple-50 rounded-lg col-span-2">
+                    <div className="flex items-center gap-2 text-purple-700 text-xs mb-1">
+                      <Palette className="w-3 h-3" />
+                      Finish Type
+                    </div>
+                    <p className="text-sm font-medium text-purple-900">{scannedPart.finish_type}</p>
+                  </div>
                 )}
               </div>
 
@@ -374,22 +566,48 @@ export default function Scan() {
               )}
 
               {/* Actions */}
-              <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="space-y-3 pt-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                    onClick={() => setShowWipDialog(true)}
+                    size="lg"
+                    className="h-16 bg-blue-600 hover:bg-blue-700 text-base"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Start WIP
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowAddStockDialog(true)}
+                    size="lg"
+                    className="h-16 text-base"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Add Stock
+                  </Button>
+                </div>
+                
                 <Button 
-                  onClick={() => setShowWipDialog(true)}
-                  className="h-14 bg-blue-600 hover:bg-blue-700"
+                  variant="secondary"
+                  onClick={() => setShowDetailsDialog(true)}
+                  className="w-full h-12"
                 >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Start WIP
+                  View Full Details
+                  <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => setShowAddStockDialog(true)}
-                  className="h-14"
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Add Stock
-                </Button>
+
+                {scannedPart.assembly_number && (
+                  <Button 
+                    onClick={() => {
+                      toast.info('Assembly workflow coming soon!');
+                    }}
+                    className="w-full h-12 bg-green-600 hover:bg-green-700"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Continue to Assembly
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -490,6 +708,64 @@ export default function Scan() {
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
               Add Stock
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Full Details Dialog */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Part Details</DialogTitle>
+          </DialogHeader>
+          {scannedPart && (
+            <div className="space-y-4 py-4">
+              <div>
+                <Label className="text-xs text-slate-500">Part Name</Label>
+                <p className="font-medium">{scannedPart.part_name}</p>
+              </div>
+              <div>
+                <Label className="text-xs text-slate-500">Part Number</Label>
+                <p className="font-medium">{scannedPart.part_number}</p>
+              </div>
+              <div>
+                <Label className="text-xs text-slate-500">Barcode</Label>
+                <p className="font-mono text-sm">{scannedPart.barcode}</p>
+              </div>
+              {scannedPart.description && (
+                <div>
+                  <Label className="text-xs text-slate-500">Description</Label>
+                  <p className="text-sm">{scannedPart.description}</p>
+                </div>
+              )}
+              {scannedPart.project_name && (
+                <div>
+                  <Label className="text-xs text-slate-500">Project / Section</Label>
+                  <p className="font-medium">{scannedPart.project_name}</p>
+                  {scannedPart.section_name && <p className="text-sm text-slate-600">→ {scannedPart.section_name}</p>}
+                  {scannedPart.subsection_name && <p className="text-sm text-slate-600">→ {scannedPart.subsection_name}</p>}
+                </div>
+              )}
+              {scannedPart.required_operation_names?.length > 0 && (
+                <div>
+                  <Label className="text-xs text-slate-500">Required Operations</Label>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {scannedPart.required_operation_names.map((op, idx) => (
+                      <Badge key={idx} variant="outline">{idx + 1}. {op}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {scannedPart.assembly_number && (
+                <div>
+                  <Label className="text-xs text-slate-500">Assembly Number</Label>
+                  <p className="font-medium">{scannedPart.assembly_number}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setShowDetailsDialog(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
