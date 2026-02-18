@@ -18,8 +18,11 @@ import {
   Target,
   Wrench,
   Users,
-  TrendingUp
+  TrendingUp,
+  ArrowRight,
+  Loader2
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +32,8 @@ export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
   const [lowStockCount, setLowStockCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('manager');
+  const [switching, setSwitching] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -40,6 +45,7 @@ export default function Layout({ children, currentPageName }) {
     try {
       const userData = await base44.auth.me();
       setUser(userData);
+      setViewMode(userData.view_mode || 'manager');
     } catch (e) {
       console.log('User not logged in');
     }
@@ -58,6 +64,31 @@ export default function Layout({ children, currentPageName }) {
   };
 
   const isAdmin = user?.role === 'admin';
+  const isManager = isAdmin || user?.role === 'manager';
+  const isOperatorMode = viewMode === 'operator';
+
+  const handleToggleViewMode = async () => {
+    if (!isManager) return;
+    
+    setSwitching(true);
+    const newMode = viewMode === 'manager' ? 'operator' : 'manager';
+    
+    try {
+      await base44.auth.updateMe({ view_mode: newMode });
+      setViewMode(newMode);
+      toast.success(
+        newMode === 'operator' 
+          ? '🔄 Switched to Operator Mode' 
+          : '🔄 Back to Manager Mode'
+      );
+      setSidebarOpen(false);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to switch mode');
+    } finally {
+      setSwitching(false);
+    }
+  };
 
   const operatorNavItems = [
     { name: 'Dashboard', page: 'Dashboard', icon: Home },
@@ -81,7 +112,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Full Stock Take', page: 'FullStockTake', icon: ClipboardList },
   ];
 
-  const navItems = isAdmin ? adminNavItems : operatorNavItems;
+  const navItems = (isManager && !isOperatorMode) ? adminNavItems : operatorNavItems;
 
   const handleLogout = () => {
     base44.auth.logout();
@@ -90,7 +121,7 @@ export default function Layout({ children, currentPageName }) {
   const NavContent = () => (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b" style={{ borderColor: '#475569' }}>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#3B82F6' }}>
             <Package className="w-6 h-6 text-white" />
           </div>
@@ -99,6 +130,43 @@ export default function Layout({ children, currentPageName }) {
             <p className="text-xs text-slate-400">Manufacturing Tracker</p>
           </div>
         </div>
+        
+        {/* View Mode Switcher - Only for Managers */}
+        {isManager && (
+          <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: '#334155' }}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-slate-300">View Mode</span>
+              <Badge 
+                variant="outline" 
+                style={{ 
+                  backgroundColor: isOperatorMode ? '#DBEAFE' : '#D1FAE5',
+                  color: isOperatorMode ? '#1E40AF' : '#065F46',
+                  borderColor: 'transparent'
+                }}
+              >
+                {isOperatorMode ? 'Operator' : 'Manager'}
+              </Badge>
+            </div>
+            <button
+              onClick={handleToggleViewMode}
+              disabled={switching}
+              className="w-full h-10 rounded-lg flex items-center justify-center gap-2 transition-all font-medium"
+              style={{ 
+                backgroundColor: isOperatorMode ? '#3B82F6' : '#10B981',
+                color: 'white'
+              }}
+            >
+              {switching ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <ArrowRight className="w-4 h-4" />
+                  Switch to {isOperatorMode ? 'Manager' : 'Operator'}
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
@@ -137,9 +205,16 @@ export default function Layout({ children, currentPageName }) {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{user.full_name || 'User'}</p>
               <p className="text-xs text-slate-400 truncate">{user.email}</p>
-              <Badge variant="outline" className={`mt-1 text-xs ${isAdmin ? 'border-amber-500 text-amber-400' : 'border-slate-500 text-slate-400'}`}>
-                {isAdmin ? 'Manager' : 'Operator'}
-              </Badge>
+              <div className="flex gap-1 mt-1">
+                <Badge variant="outline" className={`text-xs ${isAdmin ? 'border-amber-500 text-amber-400' : 'border-slate-500 text-slate-400'}`}>
+                  {isAdmin ? 'Manager' : 'Operator'}
+                </Badge>
+                {isManager && isOperatorMode && (
+                  <Badge variant="outline" className="text-xs border-blue-400 text-blue-400">
+                    Viewing as Operator
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
           <Button 
