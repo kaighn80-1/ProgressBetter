@@ -30,12 +30,9 @@ export default function FullStockTake() {
   const startFullCount = async () => {
     setLoading(true);
     try {
-      const [parts, fixings, projects, sections, subsections] = await Promise.all([
+      const [parts, fixings] = await Promise.all([
         base44.entities.Part.list(),
-        base44.entities.Fixing.list(),
-        base44.entities.Project.list(),
-        base44.entities.Section.list(),
-        base44.entities.Subsection.list()
+        base44.entities.Fixing.list()
       ]);
 
       const items = [
@@ -45,9 +42,9 @@ export default function FullStockTake() {
           name: p.part_name, 
           number: p.part_number,
           stock: p.finished_stock || 0,
-          project: projects.find(pr => pr.id === p.project_id)?.project_name || '',
-          section: sections.find(s => s.id === p.section_id)?.section_name || '',
-          subsection: subsections.find(ss => ss.id === p.subsection_id)?.subsection_name || ''
+          project: p.project_name || '',
+          section: p.section_name || '',
+          subsection: p.subsection_name || ''
         })),
         ...fixings.map(f => ({ 
           ...f, 
@@ -282,8 +279,9 @@ export default function FullStockTake() {
                         </div>
                         
                         <div className="text-sm">
-                          {item.project && <p className="text-slate-600">{item.project}</p>}
-                          {item.section && <p className="text-xs text-slate-500">{item.section}</p>}
+                          {item.project && <p className="text-slate-600 text-xs truncate">{item.project}</p>}
+                          {item.section && <p className="text-xs text-slate-500 truncate">{item.section}</p>}
+                          {item.subsection && <p className="text-xs text-slate-400 truncate">{item.subsection}</p>}
                         </div>
 
                         <div>

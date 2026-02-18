@@ -19,7 +19,8 @@ import {
   AlertTriangle,
   Loader2,
   Info,
-  TrendingUp
+  TrendingUp,
+  Eye
 } from 'lucide-react';
 
 export default function PartialStockTake() {
@@ -31,13 +32,18 @@ export default function PartialStockTake() {
   const [batchSize, setBatchSize] = useState(5);
   const [completed, setCompleted] = useState([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [blindCount, setBlindCount] = useState(true);
+  const [revealedItems, setRevealedItems] = useState({});
 
   const generateNextBatch = async () => {
     setLoading(true);
     try {
-      const [parts, fixings] = await Promise.all([
+      const [parts, fixings, projects, sections, subsections] = await Promise.all([
         base44.entities.Part.list(),
-        base44.entities.Fixing.list()
+        base44.entities.Fixing.list(),
+        base44.entities.Project.list(),
+        base44.entities.Section.list(),
+        base44.entities.Subsection.list()
       ]);
 
       // Combine and score items for counting priority
@@ -48,7 +54,10 @@ export default function PartialStockTake() {
           name: p.part_name, 
           number: p.part_number,
           stock: p.finished_stock || 0,
-          last_counted: p.last_counted_date
+          last_counted: p.last_counted_date,
+          project_name: p.project_name,
+          section_name: p.section_name,
+          subsection_name: p.subsection_name
         })),
         ...fixings.map(f => ({ 
           ...f, 
@@ -56,7 +65,10 @@ export default function PartialStockTake() {
           name: f.fixing_name, 
           number: f.sku,
           stock: f.current_stock || 0,
-          last_counted: f.last_counted_date
+          last_counted: f.last_counted_date,
+          project_name: null,
+          section_name: null,
+          subsection_name: null
         }))
       ];
 
@@ -88,6 +100,7 @@ export default function PartialStockTake() {
       setNotes({});
       setCompleted([]);
       setShowSummary(false);
+      setRevealedItems({});
       toast.success(`${selected.length} items ready to count`);
     } catch (e) {
       console.error(e);
@@ -199,6 +212,18 @@ export default function PartialStockTake() {
                   max={20}
                 />
               </div>
+              <div className="flex items-center gap-2 justify-center">
+                <input
+                  type="checkbox"
+                  id="blindCount"
+                  checked={blindCount}
+                  onChange={(e) => setBlindCount(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <Label htmlFor="blindCount" className="cursor-pointer">
+                  Blind count (hide current stock)
+                </Label>
+              </div>
             </div>
             
             <Button onClick={generateNextBatch} size="lg" className="bg-blue-600 hover:bg-blue-700">
@@ -265,10 +290,29 @@ export default function PartialStockTake() {
                         <h3 className="font-semibold text-slate-900">{item.name}</h3>
                         <p className="text-sm text-slate-500">{item.number}</p>
                         
+                        {item.project_name && (
+                          <p className="text-xs text-blue-600 mt-1">
+                            {item.project_name}
+                            {item.section_name && ` → ${item.section_name}`}
+                            {item.subsection_name && ` → ${item.subsection_name}`}
+                          </p>
+                        )}
+                        
                         <div className="flex items-center gap-2 mt-2 flex-wrap">
-                          <Badge variant="outline">
-                            Current: {item.stock} {item.unit || 'pcs'}
-                          </Badge>
+                          {blindCount && !revealedItems[item.id] ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setRevealedItems({ ...revealedItems, [item.id]: true })}
+                              className="text-xs h-7"
+                            >
+                              Show Current Stock
+                            </Button>
+                          ) : (
+                            <Badge variant="outline">
+                              Current: {item.stock} {item.unit || 'pcs'}
+                            </Badge>
+                          )}
                           {item.location && (
                             <span className="text-xs text-slate-500">📍 {item.location}</span>
                           )}
