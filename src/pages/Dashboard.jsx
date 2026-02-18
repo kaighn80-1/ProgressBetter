@@ -50,6 +50,18 @@ export default function Dashboard() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    // Show toast alerts for low stock fixings
+    if (!loading && lowStockFixings.length > 0) {
+      lowStockFixings.forEach((fixing) => {
+        toast.warning(`Fixing "${fixing.fixing_name}" low`, {
+          description: `Only ${fixing.current_stock} ${fixing.unit || 'pcs'} left (min ${fixing.min_stock_level})${fixing.location ? ` – location: ${fixing.location}` : ''}`,
+          duration: 6000
+        });
+      });
+    }
+  }, [lowStockFixings.length, loading]);
+
   const loadData = async () => {
     try {
       const [userData, partsData, fixingsData, wipsData] = await Promise.all([
