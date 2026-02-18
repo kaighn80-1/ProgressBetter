@@ -17,7 +17,8 @@ import {
   FolderOpen,
   Target,
   Wrench,
-  Users
+  Users,
+  TrendingUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -74,6 +75,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Parts Management', page: 'Parts', icon: Package },
     { name: 'Fixings', page: 'Fixings', icon: Wrench },
     { name: 'Operations', page: 'Operations', icon: Settings },
+    { name: 'Delivery Notes', page: 'DeliveryNotes', icon: TrendingUp },
     { name: 'Reports', page: 'Reports', icon: BarChart3 },
     { name: 'Partial Stock Take', page: 'PartialStockTake', icon: AlertTriangle },
     { name: 'Full Stock Take', page: 'FullStockTake', icon: ClipboardList },

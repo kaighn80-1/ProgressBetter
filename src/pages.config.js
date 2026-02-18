@@ -60,6 +60,7 @@ import Reports from './pages/Reports';
 import Requirements from './pages/Requirements';
 import Scan from './pages/Scan';
 import Sections from './pages/Sections';
+import DeliveryNotes from './pages/DeliveryNotes';
 import __Layout from './Layout.jsx';
 
 
@@ -77,6 +78,7 @@ export const PAGES = {
     "Requirements": Requirements,
     "Scan": Scan,
     "Sections": Sections,
+    "DeliveryNotes": DeliveryNotes,
 }
 
 export const pagesConfig = {
