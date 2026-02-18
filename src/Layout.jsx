@@ -108,6 +108,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Operations', page: 'Operations', icon: Settings },
     { name: 'Delivery Notes', page: 'DeliveryNotes', icon: TrendingUp },
     { name: 'Reports', page: 'Reports', icon: BarChart3 },
+    { name: 'Stock Report', page: 'FullStockTakeReport', icon: ClipboardList },
     { name: 'Partial Stock Take', page: 'PartialStockTake', icon: AlertTriangle },
     { name: 'Full Stock Take', page: 'FullStockTake', icon: ClipboardList },
   ];
