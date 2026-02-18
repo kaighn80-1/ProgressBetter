@@ -43,6 +43,8 @@ export default function Dashboard() {
   const [allUsers, setAllUsers] = useState([]);
   const [usersDialogOpen, setUsersDialogOpen] = useState(false);
   const [promoting, setPromoting] = useState(null);
+  const [editingUser, setEditingUser] = useState(null);
+  const [newRole, setNewRole] = useState('');
 
   useEffect(() => {
     loadData();
@@ -101,15 +103,18 @@ export default function Dashboard() {
     }
   };
 
-  const handlePromoteUser = async (userToPromote) => {
-    setPromoting(userToPromote.id);
+  const handleChangeUserRole = async (userToUpdate, targetRole) => {
+    setPromoting(userToUpdate.id);
     try {
-      await base44.entities.User.update(userToPromote.id, { role: 'admin' });
-      toast.success(`${userToPromote.full_name || userToPromote.email} promoted to Manager`);
+      await base44.entities.User.update(userToUpdate.id, { role: targetRole });
+      const roleNames = { user: 'Operator', supervisor: 'Supervisor', admin: 'Manager' };
+      toast.success(`${userToUpdate.full_name || userToUpdate.email} updated to ${roleNames[targetRole]}`);
       const usersData = await base44.entities.User.list();
       setAllUsers(usersData);
+      setEditingUser(null);
+      setNewRole('');
     } catch (e) {
-      toast.error('Failed to promote user');
+      toast.error('Failed to update user role');
     } finally {
       setPromoting(null);
     }
@@ -508,38 +513,79 @@ export default function Dashboard() {
               </DialogHeader>
               <div className="space-y-3 pt-4 max-h-96 overflow-y-auto">
                 {allUsers.map((u) => (
-                  <div key={u.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                    <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-slate-600">
-                        {(u.full_name || u.email || '?')[0].toUpperCase()}
-                      </span>
+                  <div key={u.id} className="p-3 bg-slate-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium text-slate-600">
+                          {(u.full_name || u.email || '?')[0].toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm text-slate-900 truncate">
+                          {u.full_name || 'No name'}
+                        </p>
+                        <p className="text-xs text-slate-500 truncate">{u.email}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className={
+                          u.role === 'admin' ? 'bg-amber-100 text-amber-700' : 
+                          u.role === 'supervisor' ? 'bg-orange-100 text-orange-700' : 
+                          'bg-slate-100 text-slate-600'
+                        }>
+                          {u.role === 'admin' ? 'Manager' : u.role === 'supervisor' ? 'Supervisor' : 'Operator'}
+                        </Badge>
+                        {u.id !== user?.id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingUser(u.id);
+                              setNewRole(u.role || 'user');
+                            }}
+                            disabled={promoting === u.id}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <ShieldCheck className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm text-slate-900 truncate">
-                        {u.full_name || 'No name'}
-                      </p>
-                      <p className="text-xs text-slate-500 truncate">{u.email}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className={
-                        u.role === 'admin' ? 'bg-amber-100 text-amber-700' : 
-                        u.role === 'supervisor' ? 'bg-orange-100 text-orange-700' : 
-                        'bg-slate-100 text-slate-600'
-                      }>
-                        {u.role === 'admin' ? 'Manager' : u.role === 'supervisor' ? 'Supervisor' : 'Operator'}
-                      </Badge>
-                      {u.role !== 'admin' && u.id !== user?.id && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handlePromoteUser(u)}
-                          disabled={promoting === u.id}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        >
-                          <ShieldCheck className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
+                    
+                    {editingUser === u.id && (
+                      <div className="mt-3 pt-3 border-t space-y-3">
+                        <Label className="text-xs">Change Role</Label>
+                        <Select value={newRole} onValueChange={setNewRole}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="user">Operator</SelectItem>
+                            <SelectItem value="supervisor">Supervisor</SelectItem>
+                            <SelectItem value="admin">Manager</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleChangeUserRole(u, newRole)}
+                            disabled={promoting === u.id || newRole === u.role}
+                          >
+                            {promoting === u.id ? 'Updating...' : 'Update Role'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setEditingUser(null);
+                              setNewRole('');
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {allUsers.length === 0 && (
