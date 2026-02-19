@@ -362,17 +362,10 @@ export default function Scan() {
         notes: wipForm.notes
       });
 
-      // Deduct from appropriate stock
-      if (scannedPart.allow_sym_opp) {
-        const stockField = wipForm.variant === 'LH' ? 'lh_stock' : 'rh_stock';
-        await base44.entities.Part.update(scannedPart.id, {
-          [stockField]: Math.max(0, (scannedPart[stockField] || 0) - qty)
-        });
-      } else {
-        await base44.entities.Part.update(scannedPart.id, {
-          finished_stock: Math.max(0, (scannedPart.finished_stock || 0) - qty)
-        });
-      }
+      // Deduct from RAW stock (starting production uses raw blanks)
+      await base44.entities.Part.update(scannedPart.id, {
+        raw_stock: Math.max(0, (scannedPart.raw_stock || 0) - qty)
+      });
 
       toast.success('WIP batch started!', {
         description: scannedPart.allow_sym_opp ? `${wipForm.variant} variant` : undefined
