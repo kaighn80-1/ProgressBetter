@@ -442,7 +442,7 @@ export default function Scan() {
       {showScanner && (
         <div className="fixed inset-0 z-50 bg-black">
           <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
-            <h2 className="text-white font-bold text-lg">Scan Barcode</h2>
+            <h2 className="text-white font-bold text-lg">Device Camera</h2>
             <div className="flex gap-2">
               {streamRef.current && (
                 <Button 
@@ -461,7 +461,6 @@ export default function Scan() {
                 onClick={() => {
                   stopCamera();
                   setShowScanner(false);
-                  setManualEntry('');
                 }}
                 className="text-white hover:bg-white/20"
               >
@@ -481,70 +480,51 @@ export default function Scan() {
             />
           )}
           
-          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/95 to-transparent">
-            <div className="space-y-4">
-              {!cameraError && !streamRef.current && (
-                <div className="text-center">
-                  <Loader2 className="w-8 h-8 animate-spin text-white mx-auto mb-2" />
-                  <p className="text-white text-sm">Starting camera...</p>
-                </div>
-              )}
-              
-              {!cameraError && streamRef.current && (
-                <p className="text-white text-center text-sm font-medium">Position barcode within frame</p>
-              )}
-              
-              {cameraPermissionBlocked && (
-                <div className="bg-red-500 text-white p-5 rounded-xl">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="w-7 h-7 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold text-lg mb-2">Camera Access Denied or Failed</p>
-                      <p className="text-sm mb-3">Check browser settings:</p>
-                      <div className="bg-white/20 rounded-lg p-3 text-sm space-y-2">
-                        <p><strong>Safari:</strong> Settings → Safari → Camera → Allow</p>
-                        <p><strong>Chrome:</strong> Settings → Site Settings → Camera → Allow</p>
-                      </div>
-                      <p className="text-sm mt-3 font-semibold">Or use manual entry below ↓</p>
-                    </div>
+          {cameraError && (
+            <div className="flex items-center justify-center h-full p-6">
+              <div className="max-w-md text-center">
+                <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-white mb-3">Camera Not Available</h3>
+                <p className="text-white/90 mb-4">Use manual entry instead</p>
+                
+                {cameraPermissionBlocked && (
+                  <div className="bg-white/10 rounded-lg p-4 text-left text-sm space-y-2 mb-4">
+                    <p className="text-white font-semibold mb-2">Check browser settings:</p>
+                    <p className="text-white/90"><strong>Chrome/Edge:</strong> Settings → Site Settings → Camera → Allow for this site</p>
+                    <p className="text-white/90"><strong>Safari:</strong> Settings → Safari → Camera → Allow</p>
                   </div>
-                </div>
-              )}
-              
-              {cameraError && !cameraPermissionBlocked && (
-                <div className="bg-amber-500 text-white p-4 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <AlertCircle className="w-6 h-6 flex-shrink-0" />
-                    <div>
-                      <p className="font-bold text-lg">Camera Not Available</p>
-                      <p className="text-sm mt-1">Use manual entry below</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              <div className="space-y-2">
-                <Label className="text-white text-base font-bold">Enter Barcode Manually:</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={manualEntry}
-                    onChange={(e) => setManualEntry(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && manualEntry.trim() && handleManualScan()}
-                    placeholder="Type or paste barcode here..."
-                    className="h-16 text-lg bg-white font-mono"
-                    autoFocus
-                  />
-                  <Button 
-                    onClick={handleManualScan}
-                    disabled={!manualEntry.trim() || loading}
-                    className="h-16 px-8 bg-blue-600 hover:bg-blue-700 text-base font-bold"
-                  >
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Lookup'}
-                  </Button>
-                </div>
+                )}
+                
+                <Button
+                  size="lg"
+                  onClick={() => {
+                    stopCamera();
+                    setShowScanner(false);
+                  }}
+                  className="bg-white text-black hover:bg-white/90"
+                >
+                  Close and Use Manual Entry
+                </Button>
               </div>
             </div>
-          </div>
+          )}
+          
+          {!cameraError && (
+            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/95 to-transparent">
+              <div className="space-y-4">
+                {!streamRef.current && (
+                  <div className="text-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-white mx-auto mb-2" />
+                    <p className="text-white text-sm">Starting camera...</p>
+                  </div>
+                )}
+                
+                {streamRef.current && (
+                  <p className="text-white text-center text-base font-medium">Position barcode within frame</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -554,32 +534,68 @@ export default function Scan() {
         <p className="text-slate-600">Scan barcode or search for parts</p>
       </div>
 
-      {/* Scan Button */}
-      <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-600 to-blue-700">
-        <CardContent className="p-6">
-          <Button 
-            onClick={() => {
-              setShowScanner(true);
-              setCameraError(false);
-              setCameraPermissionBlocked(false);
-              setManualEntry('');
-            }}
-            size="lg"
-            className="w-full h-24 text-xl bg-white text-blue-600 hover:bg-blue-50 shadow-lg"
-          >
-            <Camera className="w-10 h-10 mr-3" />
-            <div className="text-left">
-              <div className="font-bold">Start Camera Scan</div>
-              <div className="text-sm font-normal">Or enter barcode manually</div>
+      {/* Primary: Manual Barcode Entry */}
+      <Card className="border-0 shadow-xl bg-white">
+        <CardContent className="p-8">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
+              <ScanBarcode className="w-8 h-8 text-blue-600" />
             </div>
-          </Button>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: '#1E293B' }}>Enter or Paste Barcode</h2>
+            <p className="text-sm" style={{ color: '#64748B' }}>Type or paste the barcode number below</p>
+          </div>
+
+          <div className="space-y-4">
+            <Input
+              placeholder="Type or paste barcode here..."
+              value={manualEntry}
+              onChange={(e) => setManualEntry(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && manualEntry.trim() && handleManualScan()}
+              className="h-16 text-xl font-mono text-center"
+              autoFocus
+            />
+            <Button 
+              onClick={handleManualScan}
+              disabled={!manualEntry.trim() || loading}
+              size="lg"
+              className="w-full h-16 text-lg font-bold bg-blue-600 hover:bg-blue-700"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-6 h-6 mr-2 animate-spin" />
+                  Looking up...
+                </>
+              ) : (
+                <>
+                  <Check className="w-6 h-6 mr-2" />
+                  Submit Barcode
+                </>
+              )}
+            </Button>
+          </div>
+
+          <div className="mt-6 pt-6 border-t">
+            <Button 
+              onClick={() => {
+                setShowScanner(true);
+                setCameraError(false);
+                setCameraPermissionBlocked(false);
+              }}
+              variant="outline"
+              size="lg"
+              className="w-full h-14"
+            >
+              <Camera className="w-5 h-5 mr-2" />
+              Use Device Camera (Optional)
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
       {/* Quick Test Barcodes */}
       <Card className="border-0 shadow-md bg-gradient-to-r from-amber-50 to-orange-50">
         <CardContent className="p-4">
-          <p className="text-xs text-amber-700 font-medium mb-3">🧪 Test Barcodes:</p>
+          <p className="text-xs text-amber-700 font-medium mb-3">🧪 Quick Test:</p>
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
@@ -609,56 +625,24 @@ export default function Scan() {
         </CardContent>
       </Card>
 
-      {/* Manual Entry / Search */}
+      {/* Part Search */}
       <Card className="border-0 shadow-md">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Search className="w-5 h-5" />
-            Manual Entry
+            Search Parts
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label className="text-sm text-slate-600 mb-2 block">Enter Barcode:</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Type barcode number..."
-                value={manualEntry}
-                onChange={(e) => setManualEntry(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleManualScan()}
-                className="h-14 text-lg font-mono"
-              />
-              <Button 
-                onClick={handleManualScan}
-                disabled={!manualEntry.trim() || loading}
-                size="lg"
-                className="h-14 px-8 bg-blue-600 hover:bg-blue-700"
-              >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Submit'}
-              </Button>
-            </div>
-          </div>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-slate-500">Or Search</span>
-            </div>
-          </div>
-
           <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Input
-                placeholder="Search by name, number, or barcode..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="h-12"
-              />
-            </div>
-            <Button onClick={handleSearch} className="h-12 px-6" disabled={searching}>
+            <Input
+              placeholder="Search by name, number, or barcode..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="h-12"
+            />
+            <Button onClick={handleSearch} className="h-12 px-6 bg-blue-600 hover:bg-blue-700" disabled={searching}>
               {searching ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Search'}
             </Button>
           </div>
