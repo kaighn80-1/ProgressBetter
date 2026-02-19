@@ -40,7 +40,6 @@ export default function Scan() {
   const html5QrCodeRef = useRef(null);
   const scannerDivRef = useRef(null);
   const noDetectionTimeoutRef = useRef(null);
-  const restartIntervalRef = useRef(null);
   
   const [showScanner, setShowScanner] = useState(false);
   const [manualEntry, setManualEntry] = useState('');
@@ -107,20 +106,18 @@ export default function Scan() {
         });
       }, 10000);
       
-      // Calculate dynamic qrbox size (80% of smaller dimension)
-      const screenWidth = window.innerWidth;
-      const screenHeight = window.innerHeight;
-      const qrboxSize = Math.min(screenWidth, screenHeight) * 0.8;
-      
       const config = {
-        fps: 15,
-        qrbox: { width: qrboxSize, height: qrboxSize },
-        aspectRatio: 1.0,
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.777,
         disableFlip: false,
         rememberLastUsedCamera: true,
         experimentalFeatures: {
           useBarCodeDetectorIfSupported: true
-        }
+        },
+        formatsToSupport: [
+          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
+        ]
       };
       
       await html5QrCode.start(
@@ -128,58 +125,18 @@ export default function Scan() {
         config,
         (decodedText, decodedResult) => {
           console.log('✅ Barcode detected:', decodedText);
-          alert(`✅ Barcode: ${decodedText}`);
           vibrateDevice();
           playSuccessSound();
           if (noDetectionTimeoutRef.current) {
             clearTimeout(noDetectionTimeoutRef.current);
           }
-          if (restartIntervalRef.current) {
-            clearInterval(restartIntervalRef.current);
-          }
           stopScanner();
           handleScan(decodedText);
         },
         (errorMessage) => {
-          // Silent - scanning errors are normal
+          // Silent - scanning errors are normal while looking for codes
         }
       );
-      
-      // Restart camera every 5 seconds on mobile for better autofocus
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        restartIntervalRef.current = setInterval(async () => {
-          try {
-            if (html5QrCodeRef.current) {
-              const currentState = html5QrCodeRef.current.getState();
-              if (currentState === 2) { // SCANNING
-                await html5QrCodeRef.current.stop();
-                await html5QrCodeRef.current.start(
-                  { facingMode: "environment" },
-                  config,
-                  (decodedText) => {
-                    console.log('✅ Barcode detected:', decodedText);
-                    alert(`✅ Barcode: ${decodedText}`);
-                    vibrateDevice();
-                    playSuccessSound();
-                    if (noDetectionTimeoutRef.current) {
-                      clearTimeout(noDetectionTimeoutRef.current);
-                    }
-                    if (restartIntervalRef.current) {
-                      clearInterval(restartIntervalRef.current);
-                    }
-                    stopScanner();
-                    handleScan(decodedText);
-                  },
-                  () => {}
-                );
-              }
-            }
-          } catch (e) {
-            console.log('Restart failed:', e);
-          }
-        }, 5000);
-      }
       
       toast.success('Camera ready - scan barcode', { duration: 2000 });
     } catch (err) {
@@ -205,9 +162,6 @@ export default function Scan() {
     if (noDetectionTimeoutRef.current) {
       clearTimeout(noDetectionTimeoutRef.current);
     }
-    if (restartIntervalRef.current) {
-      clearInterval(restartIntervalRef.current);
-    }
     
     if (html5QrCodeRef.current) {
       try {
@@ -221,11 +175,6 @@ export default function Scan() {
     
     setScanning(false);
     setCameraError(false);
-  };
-
-  const retryScanner = async () => {
-    await stopScanner();
-    setTimeout(() => startScanner(), 300);
   };
 
   const vibrateDevice = () => {
@@ -551,23 +500,13 @@ export default function Scan() {
               <div id="qr-reader" ref={scannerDivRef} className="w-full h-full"></div>
               
               <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/95 to-transparent">
-                <div className="text-center space-y-4">
-                  <div className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-full">
+                <div className="text-center">
+                  <div className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-full mb-3">
                     <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
                     <span className="text-sm font-semibold">Scanning...</span>
                   </div>
-                  <div>
-                    <p className="text-white text-base font-medium">Point camera at barcode – hold steady in good light</p>
-                    <p className="text-white/70 text-sm mt-2">If not detecting, use manual entry below</p>
-                  </div>
-                  <Button
-                    onClick={retryScanner}
-                    variant="outline"
-                    className="bg-white/10 hover:bg-white/20 text-white border-white/30"
-                  >
-                    <Loader2 className="w-4 h-4 mr-2" />
-                    Retry Scan
-                  </Button>
+                  <p className="text-white text-base font-medium">Position barcode within green frame</p>
+                  <p className="text-white/70 text-sm mt-2">Hold steady • Good lighting helps</p>
                 </div>
               </div>
             </>
@@ -588,10 +527,6 @@ export default function Scan() {
               width: 100% !important;
               height: 100% !important;
               object-fit: cover !important;
-            }
-            #qr-reader__scan_region {
-              border: 3px solid #10B981 !important;
-              box-shadow: 0 0 0 9999px rgba(0,0,0,0.5) !important;
             }
           `}</style>
         </div>
