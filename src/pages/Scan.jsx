@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { Html5Qrcode } from 'html5-qrcode';
 import { 
   ScanBarcode, 
   Package, 
@@ -36,8 +37,9 @@ import {
 
 export default function Scan() {
   const navigate = useNavigate();
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
+  const html5QrCodeRef = useRef(null);
+  const scannerDivRef = useRef(null);
+  const noDetectionTimeoutRef = useRef(null);
   
   const [showScanner, setShowScanner] = useState(false);
   const [manualEntry, setManualEntry] = useState('');
@@ -50,11 +52,9 @@ export default function Scan() {
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [cameraError, setCameraError] = useState(false);
-  const [cameraPermissionBlocked, setCameraPermissionBlocked] = useState(false);
-  const [torchEnabled, setTorchEnabled] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [showFixings, setShowFixings] = useState(false);
   const [fixingDetails, setFixingDetails] = useState([]);
-  const cameraTimeoutRef = useRef(null);
 
   // Action dialogs
   const [showWipDialog, setShowWipDialog] = useState(false);
@@ -69,14 +69,11 @@ export default function Scan() {
   }, []);
 
   useEffect(() => {
-    if (showScanner && !cameraError) {
-      startCamera();
+    if (showScanner) {
+      startScanner();
     }
     return () => {
-      stopCamera();
-      if (cameraTimeoutRef.current) {
-        clearTimeout(cameraTimeoutRef.current);
-      }
+      stopScanner();
     };
   }, [showScanner]);
 
@@ -93,70 +90,67 @@ export default function Scan() {
     }
   };
 
-  const startCamera = async () => {
+  const startScanner = async () => {
     setCameraError(false);
-    setCameraPermissionBlocked(false);
-    
-    // Set timeout for camera buffering
-    cameraTimeoutRef.current = setTimeout(() => {
-      if (!streamRef.current) {
-        setCameraError(true);
-        toast.error('Camera buffering timeout', {
-          description: 'Check permissions or use manual entry',
-          duration: 5000
-        });
-      }
-    }, 5000);
+    setScanning(true);
     
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'environment',
-          aspectRatio: { ideal: 1.777 }
-        } 
-      });
+      const html5QrCode = new Html5Qrcode("qr-reader");
+      html5QrCodeRef.current = html5QrCode;
       
-      if (cameraTimeoutRef.current) {
-        clearTimeout(cameraTimeoutRef.current);
-      }
+      // Set timeout for no detection
+      noDetectionTimeoutRef.current = setTimeout(() => {
+        toast('No barcode detected yet', {
+          description: 'Try manual entry or better lighting',
+          duration: 4000
+        });
+      }, 10000);
       
-      if (videoRef.current && showScanner) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        
-        // Wait for video to be ready
-        await videoRef.current.play();
-        
-        // Check if torch is available
-        const videoTrack = stream.getVideoTracks()[0];
-        const capabilities = videoTrack.getCapabilities?.();
-        if (capabilities?.torch) {
-          // Torch available
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.777,
+        disableFlip: false,
+        rememberLastUsedCamera: true,
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true
+        },
+        formatsToSupport: [
+          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
+        ]
+      };
+      
+      await html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText, decodedResult) => {
+          console.log('✅ Barcode detected:', decodedText);
+          vibrateDevice();
+          playSuccessSound();
+          if (noDetectionTimeoutRef.current) {
+            clearTimeout(noDetectionTimeoutRef.current);
+          }
+          stopScanner();
+          handleScan(decodedText);
+        },
+        (errorMessage) => {
+          // Silent - scanning errors are normal while looking for codes
         }
-        
-        toast.success('Camera ready', { duration: 1500 });
-      }
+      );
+      
+      toast.success('Camera ready - scan barcode', { duration: 2000 });
     } catch (err) {
-      if (cameraTimeoutRef.current) {
-        clearTimeout(cameraTimeoutRef.current);
-      }
-      
-      console.error('Camera error:', err);
+      console.error('Scanner error:', err);
       setCameraError(true);
+      setScanning(false);
       
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setCameraPermissionBlocked(true);
-        toast.error('Camera access denied', { 
-          description: 'Please allow camera in browser settings or use manual entry',
+      if (err.name === 'NotAllowedError' || err.toString().includes('Permission')) {
+        toast.error('Camera access denied', {
+          description: 'Check browser settings or use manual entry',
           duration: 6000
         });
-      } else if (err.name === 'NotFoundError') {
-        toast.error('No camera found', { 
-          description: 'Use manual entry below',
-          duration: 5000
-        });
       } else {
-        toast.error('Camera unavailable', { 
+        toast.error('Camera unavailable', {
           description: 'Use manual entry below',
           duration: 5000
         });
@@ -164,42 +158,23 @@ export default function Scan() {
     }
   };
 
-  const toggleTorch = async () => {
-    if (!streamRef.current) return;
+  const stopScanner = async () => {
+    if (noDetectionTimeoutRef.current) {
+      clearTimeout(noDetectionTimeoutRef.current);
+    }
     
-    try {
-      const videoTrack = streamRef.current.getVideoTracks()[0];
-      const capabilities = videoTrack.getCapabilities?.();
-      
-      if (capabilities?.torch) {
-        await videoTrack.applyConstraints({
-          advanced: [{ torch: !torchEnabled }]
-        });
-        setTorchEnabled(!torchEnabled);
-        toast.success(torchEnabled ? 'Torch off' : 'Torch on', { duration: 1000 });
-      } else {
-        toast.error('Torch not available on this device', { duration: 2000 });
+    if (html5QrCodeRef.current) {
+      try {
+        await html5QrCodeRef.current.stop();
+        html5QrCodeRef.current.clear();
+      } catch (err) {
+        console.log('Error stopping scanner:', err);
       }
-    } catch (err) {
-      console.error('Torch error:', err);
-      toast.error('Could not toggle torch');
+      html5QrCodeRef.current = null;
     }
-  };
-
-  const stopCamera = () => {
-    if (cameraTimeoutRef.current) {
-      clearTimeout(cameraTimeoutRef.current);
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    setTorchEnabled(false);
+    
+    setScanning(false);
     setCameraError(false);
-    setCameraPermissionBlocked(false);
   };
 
   const vibrateDevice = () => {
@@ -226,12 +201,9 @@ export default function Scan() {
   };
 
   const handleScan = async (barcode) => {
-    stopCamera();
     setShowScanner(false);
     setManualEntry('');
     setLoading(true);
-
-    vibrateDevice();
 
     try {
       const parts = await base44.entities.Part.filter({ barcode: barcode });
@@ -484,62 +456,37 @@ export default function Scan() {
       {showScanner && (
         <div className="fixed inset-0 z-50 bg-black">
           <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
-            <h2 className="text-white font-bold text-lg">Device Camera</h2>
-            <div className="flex gap-2">
-              {streamRef.current && (
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={toggleTorch}
-                  className="text-white hover:bg-white/20"
-                  title="Toggle flashlight"
-                >
-                  {torchEnabled ? <FlashlightOff className="w-5 h-5" /> : <Flashlight className="w-5 h-5" />}
-                </Button>
-              )}
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => {
-                  stopCamera();
-                  setShowScanner(false);
-                }}
-                className="text-white hover:bg-white/20"
-              >
-                <X className="w-6 h-6" />
-              </Button>
-            </div>
+            <h2 className="text-white font-bold text-lg">Scan Barcode</h2>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => {
+                stopScanner();
+                setShowScanner(false);
+              }}
+              className="text-white hover:bg-white/20"
+            >
+              <X className="w-6 h-6" />
+            </Button>
           </div>
           
-          {!cameraError && (
-            <video 
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-            />
-          )}
-          
-          {cameraError && (
+          {cameraError ? (
             <div className="flex items-center justify-center h-full p-6">
               <div className="max-w-md text-center">
                 <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-white mb-3">Camera Not Available</h3>
                 <p className="text-white/90 mb-4">Use manual entry instead</p>
                 
-                {cameraPermissionBlocked && (
-                  <div className="bg-white/10 rounded-lg p-4 text-left text-sm space-y-2 mb-4">
-                    <p className="text-white font-semibold mb-2">Check browser settings:</p>
-                    <p className="text-white/90"><strong>Chrome/Edge:</strong> Settings → Site Settings → Camera → Allow for this site</p>
-                    <p className="text-white/90"><strong>Safari:</strong> Settings → Safari → Camera → Allow</p>
-                  </div>
-                )}
+                <div className="bg-white/10 rounded-lg p-4 text-left text-sm space-y-2 mb-4">
+                  <p className="text-white font-semibold mb-2">Check browser settings:</p>
+                  <p className="text-white/90"><strong>Chrome/Edge:</strong> Settings → Site Settings → Camera → Allow for this site</p>
+                  <p className="text-white/90"><strong>Safari:</strong> Settings → Safari → Camera → Allow</p>
+                </div>
                 
                 <Button
                   size="lg"
                   onClick={() => {
-                    stopCamera();
+                    stopScanner();
                     setShowScanner(false);
                   }}
                   className="bg-white text-black hover:bg-white/90"
@@ -548,24 +495,40 @@ export default function Scan() {
                 </Button>
               </div>
             </div>
+          ) : (
+            <>
+              <div id="qr-reader" ref={scannerDivRef} className="w-full h-full"></div>
+              
+              <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/95 to-transparent">
+                <div className="text-center">
+                  <div className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-full mb-3">
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                    <span className="text-sm font-semibold">Scanning...</span>
+                  </div>
+                  <p className="text-white text-base font-medium">Position barcode within green frame</p>
+                  <p className="text-white/70 text-sm mt-2">Hold steady • Good lighting helps</p>
+                </div>
+              </div>
+            </>
           )}
           
-          {!cameraError && (
-            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/95 to-transparent">
-              <div className="space-y-4">
-                {!streamRef.current && (
-                  <div className="text-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-white mx-auto mb-2" />
-                    <p className="text-white text-sm">Starting camera...</p>
-                  </div>
-                )}
-                
-                {streamRef.current && (
-                  <p className="text-white text-center text-base font-medium">Position barcode within frame</p>
-                )}
-              </div>
-            </div>
-          )}
+          <style>{`
+            #qr-reader {
+              width: 100% !important;
+              height: 100% !important;
+            }
+            #qr-reader__dashboard_section {
+              display: none !important;
+            }
+            #qr-reader__camera_selection {
+              display: none !important;
+            }
+            #qr-reader video {
+              width: 100% !important;
+              height: 100% !important;
+              object-fit: cover !important;
+            }
+          `}</style>
         </div>
       )}
 
