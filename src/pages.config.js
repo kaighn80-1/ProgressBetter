@@ -62,6 +62,9 @@ import Reports from './pages/Reports';
 import Requirements from './pages/Requirements';
 import Scan from './pages/Scan';
 import Sections from './pages/Sections';
+import PinVerification from './pages/PinVerification';
+import SetupPin from './pages/SetupPin';
+import ChangePassword from './pages/ChangePassword';
 import __Layout from './Layout.jsx';
 
 
@@ -81,6 +84,9 @@ export const PAGES = {
     "Requirements": Requirements,
     "Scan": Scan,
     "Sections": Sections,
+    "PinVerification": PinVerification,
+    "SetupPin": SetupPin,
+    "ChangePassword": ChangePassword,
 }
 
 export const pagesConfig = {
