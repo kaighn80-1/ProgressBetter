@@ -1058,45 +1058,23 @@ export default function Scan() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Stock Dialog */}
+      {/* Add Raw Stock Dialog */}
       <Dialog open={showAddStockDialog} onOpenChange={setShowAddStockDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add to Stock</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                <Plus className="w-5 h-5 text-amber-600" />
+              </div>
+              Add Raw Stock / Blanks
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {scannedPart?.allow_sym_opp && (
-              <div>
-                <Label className="text-base font-semibold">Add to Stock As *</Label>
-                <p className="text-xs text-slate-500 mb-3">Select variant</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setAddStockForm({ ...addStockForm, variant: 'LH' })}
-                    className={`h-20 rounded-xl border-2 font-semibold transition-all ${
-                      addStockForm.variant === 'LH'
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
-                        : 'bg-white border-slate-200 text-slate-700 hover:border-blue-400'
-                    }`}
-                  >
-                    <div className="text-lg">Left Hand</div>
-                    <div className="text-sm opacity-80">(LH)</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAddStockForm({ ...addStockForm, variant: 'RH' })}
-                    className={`h-20 rounded-xl border-2 font-semibold transition-all ${
-                      addStockForm.variant === 'RH'
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
-                        : 'bg-white border-slate-200 text-slate-700 hover:border-blue-400'
-                    }`}
-                  >
-                    <div className="text-lg">Right Hand</div>
-                    <div className="text-sm opacity-80">(RH)</div>
-                  </button>
-                </div>
-              </div>
-            )}
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm text-amber-900 font-medium">📦 Receiving unworked parts</p>
+              <p className="text-xs text-amber-700 mt-1">This adds raw materials/blanks that haven't been processed yet</p>
+            </div>
+            
             <div>
               <Label>Quantity to Add</Label>
               <Input
@@ -1111,7 +1089,7 @@ export default function Scan() {
             <div>
               <Label>Notes (optional)</Label>
               <Textarea
-                placeholder="e.g., New delivery, returned items..."
+                placeholder="e.g., New delivery, supplier name..."
                 value={addStockForm.notes}
                 onChange={(e) => setAddStockForm({ ...addStockForm, notes: e.target.value })}
                 className="mt-1"
