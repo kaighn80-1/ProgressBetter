@@ -396,40 +396,28 @@ export default function Scan() {
       return;
     }
 
-    if (scannedPart.allow_sym_opp && !addStockForm.variant) {
-      toast.error('Please select LH or RH variant');
-      return;
-    }
-
     setSaving(true);
     try {
       const qty = parseInt(addStockForm.quantity);
       
-      if (scannedPart.allow_sym_opp) {
-        const stockField = addStockForm.variant === 'LH' ? 'lh_stock' : 'rh_stock';
-        const newStock = (scannedPart[stockField] || 0) + qty;
-        await base44.entities.Part.update(scannedPart.id, {
-          [stockField]: newStock
-        });
-      } else {
-        const newStock = (scannedPart.finished_stock || 0) + qty;
-        await base44.entities.Part.update(scannedPart.id, {
-          finished_stock: newStock
-        });
-      }
+      // Add to RAW STOCK only (unworked blanks/raw parts)
+      const newRawStock = (scannedPart.raw_stock || 0) + qty;
+      await base44.entities.Part.update(scannedPart.id, {
+        raw_stock: newRawStock
+      });
 
       await base44.entities.StockTransaction.create({
         part_id: scannedPart.id,
         part_name: scannedPart.part_name,
-        transaction_type: 'added_to_stock',
+        transaction_type: 'received_raw_stock',
         quantity_change: qty,
         user_email: user?.email,
         user_name: user?.full_name,
         notes: addStockForm.notes
       });
 
-      toast.success('Stock updated!', {
-        description: scannedPart.allow_sym_opp ? `${addStockForm.variant} variant` : undefined
+      toast.success('✓ Raw stock added!', {
+        description: `Added ${qty} unworked blanks for ${scannedPart.part_name}`
       });
       setShowAddStockDialog(false);
       setAddStockForm({ quantity: '', notes: '', variant: '' });
