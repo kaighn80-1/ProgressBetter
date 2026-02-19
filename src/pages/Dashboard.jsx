@@ -104,7 +104,14 @@ export default function Dashboard() {
     setInviting(true);
     try {
       await base44.users.inviteUser(inviteEmail, inviteRole);
-      toast.success(`Invitation sent to ${inviteEmail}`);
+      
+      // Note: After invitation, the user will need to:
+      // 1. Check their email for login credentials
+      // 2. Log in with email/password
+      // 3. Set up their 4-digit PIN
+      // 4. Change their password (if must_change_password is true)
+      
+      toast.success(`Invitation sent to ${inviteEmail}. New user will be prompted to set up PIN and change password on first login.`);
       setInviteDialogOpen(false);
       setInviteEmail('');
       setInviteRole('user');
