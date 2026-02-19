@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from './utils';
 import { 
@@ -34,20 +34,77 @@ export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState('manager');
   const [switching, setSwitching] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    loadUser();
+    checkAuthAndRedirect();
     loadLowStockCount();
-  }, []);
+  }, [location.pathname]);
 
-  const loadUser = async () => {
+  const checkAuthAndRedirect = async () => {
+    // Skip auth check for auth-related pages
+    const authPages = ['/PinVerification', '/SetupPin', '/ChangePassword'];
+    if (authPages.includes(location.pathname)) {
+      setAuthChecked(true);
+      return;
+    }
+
     try {
       const userData = await base44.auth.me();
       setUser(userData);
       setViewMode(userData.view_mode || 'manager');
+
+      // Check if PIN is set up
+      if (!userData.pin_code) {
+        navigate('/SetupPin');
+        return;
+      }
+
+      // Check if PIN verified in this session (within last hour)
+      if (userData.pin_verified_at) {
+        const verifiedAt = new Date(userData.pin_verified_at);
+        const hoursSinceVerification = (Date.now() - verifiedAt.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursSinceVerification > 1) {
+          navigate('/PinVerification');
+          return;
+        }
+      } else {
+        navigate('/PinVerification');
+        return;
+      }
+
+      // Check if password change required
+      if (userData.must_change_password) {
+        navigate('/ChangePassword');
+        return;
+      }
+
+      // Check if password is older than 30 days
+      if (userData.last_password_change) {
+        const lastChange = new Date(userData.last_password_change);
+        const daysSinceChange = Math.floor((Date.now() - lastChange.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysSinceChange > 30 && location.pathname !== '/ChangePassword') {
+          // Show reminder but allow continued use
+          if (daysSinceChange === 31) { // Only show once
+            toast.warning('Your password is over 30 days old. Please consider changing it.', {
+              duration: 5000,
+              action: {
+                label: 'Change Now',
+                onClick: () => navigate('/ChangePassword')
+              }
+            });
+          }
+        }
+      }
+
+      setAuthChecked(true);
     } catch (e) {
       console.log('User not logged in');
+      setAuthChecked(true);
     }
   };
 
