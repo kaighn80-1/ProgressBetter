@@ -703,63 +703,57 @@ export default function Scan() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Stock Level */}
-              {scannedPart.allow_sym_opp ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-slate-700">Symmetric Opposite Stock</span>
-                    {isLowStock && (
-                      <Badge variant="destructive" className="flex items-center gap-1 animate-pulse">
-                        <AlertTriangle className="w-3 h-3" />
-                        Low Stock
-                      </Badge>
-                    )}
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Raw Stock */}
+                  <div className="p-4 rounded-xl bg-amber-50 border-2 border-amber-200">
+                    <div className="text-xs text-amber-700 mb-1 font-medium">Raw / Blanks</div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-bold text-amber-600">{scannedPart.raw_stock || 0}</span>
+                      <span className="text-sm text-amber-600">{scannedPart.unit || 'pcs'}</span>
+                    </div>
                   </div>
+                  
+                  {/* Finished Stock */}
+                  <div className={`p-4 rounded-xl ${isLowStock ? 'bg-red-50 border-2 border-red-300' : 'bg-green-50 border-2 border-green-200'}`}>
+                    <div className="text-xs mb-1 font-medium flex items-center justify-between">
+                      <span className={isLowStock ? 'text-red-700' : 'text-green-700'}>Finished</span>
+                      {isLowStock && <AlertTriangle className="w-3 h-3 text-red-600" />}
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className={`text-3xl font-bold ${isLowStock ? 'text-red-600' : 'text-green-600'}`}>
+                        {scannedPart.finished_stock || 0}
+                      </span>
+                      <span className={`text-sm ${isLowStock ? 'text-red-600' : 'text-green-600'}`}>{scannedPart.unit || 'pcs'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {scannedPart.allow_sym_opp && (
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="p-4 rounded-xl bg-blue-50 border-2 border-blue-200">
-                      <div className="text-xs text-blue-700 mb-1 font-medium">Left Hand (LH)</div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-blue-600">{scannedPart.lh_stock || 0}</span>
-                        <span className="text-sm text-blue-600">{scannedPart.unit || 'pcs'}</span>
+                    <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                      <div className="text-xs text-blue-700 mb-1 font-medium">LH Finished</div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold text-blue-600">{scannedPart.lh_stock || 0}</span>
+                        <span className="text-xs text-blue-600">{scannedPart.unit || 'pcs'}</span>
                       </div>
                     </div>
-                    <div className="p-4 rounded-xl bg-blue-50 border-2 border-blue-200">
-                      <div className="text-xs text-blue-700 mb-1 font-medium">Right Hand (RH)</div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-blue-600">{scannedPart.rh_stock || 0}</span>
-                        <span className="text-sm text-blue-600">{scannedPart.unit || 'pcs'}</span>
+                    <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                      <div className="text-xs text-blue-700 mb-1 font-medium">RH Finished</div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold text-blue-600">{scannedPart.rh_stock || 0}</span>
+                        <span className="text-xs text-blue-600">{scannedPart.unit || 'pcs'}</span>
                       </div>
                     </div>
                   </div>
-                  {scannedPart.min_stock_level && (
-                    <p className="text-xs text-slate-500">
-                      Min: {scannedPart.min_stock_level} | Reorder: {scannedPart.reorder_quantity || '-'}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className={`p-4 rounded-xl ${isLowStock ? 'bg-red-50' : 'bg-green-50'}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-slate-600">Finished Stock</span>
-                    {isLowStock && (
-                      <Badge variant="destructive" className="flex items-center gap-1 animate-pulse">
-                        <AlertTriangle className="w-3 h-3" />
-                        Low Stock
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className={`text-4xl font-bold ${isLowStock ? 'text-red-600' : 'text-green-600'}`}>
-                      {scannedPart.finished_stock || 0}
-                    </span>
-                    <span className="text-lg text-slate-600">{scannedPart.unit || 'pcs'}</span>
-                  </div>
-                  {scannedPart.min_stock_level && (
-                    <p className="text-xs text-slate-500 mt-2">
-                      Min: {scannedPart.min_stock_level} | Reorder: {scannedPart.reorder_quantity || '-'}
-                    </p>
-                  )}
-                </div>
-              )}
+                )}
+
+                {scannedPart.min_stock_level && (
+                  <p className="text-xs text-slate-500">
+                    Min: {scannedPart.min_stock_level} | Reorder: {scannedPart.reorder_quantity || '-'}
+                  </p>
+                )}
+              </div>
 
               {/* Part Details */}
               <div className="grid grid-cols-2 gap-3">
