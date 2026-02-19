@@ -81,16 +81,10 @@ export default function Scan() {
   };
 
   const startCamera = async () => {
-    console.log('🎥 Starting camera...');
-    console.log('📱 User agent:', navigator.userAgent);
-    console.log('🔒 Protocol:', window.location.protocol);
-    console.log('🌐 Hostname:', window.location.hostname);
-    
     setCameraError(false);
     setCameraPermissionBlocked(false);
     
     try {
-      console.log('🎬 Requesting camera with rear camera preference...');
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'environment',
@@ -98,9 +92,6 @@ export default function Scan() {
           height: { ideal: 720 }
         } 
       });
-      
-      console.log('✅ Camera access granted!');
-      console.log('📹 Video tracks:', stream.getVideoTracks().length);
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -110,35 +101,27 @@ export default function Scan() {
         const videoTrack = stream.getVideoTracks()[0];
         const capabilities = videoTrack.getCapabilities?.();
         if (capabilities?.torch) {
-          console.log('🔦 Torch available!');
-        } else {
-          console.log('❌ Torch not available on this device');
+          // Torch available
         }
       }
       
-      toast.success('Camera ready', { duration: 2000 });
+      toast.success('Camera ready', { duration: 1500 });
     } catch (err) {
-      console.error('❌ Camera error:', err);
-      console.error('Error name:', err.name);
-      console.error('Error message:', err.message);
-      
+      console.error('Camera error:', err);
       setCameraError(true);
       
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        console.log('🚫 Camera permission blocked by user');
         setCameraPermissionBlocked(true);
-        toast.error('Camera access blocked', { 
-          description: 'Please allow camera access in your browser settings',
-          duration: 8000
+        toast.error('Camera access denied', { 
+          description: 'Please allow camera in browser settings or use manual entry',
+          duration: 6000
         });
       } else if (err.name === 'NotFoundError') {
-        console.log('📵 No camera found on device');
         toast.error('No camera found', { 
           description: 'Use manual entry below',
           duration: 5000
         });
       } else {
-        console.log('⚠️ Other camera error');
         toast.error('Camera unavailable', { 
           description: 'Use manual entry below',
           duration: 5000
@@ -159,10 +142,9 @@ export default function Scan() {
           advanced: [{ torch: !torchEnabled }]
         });
         setTorchEnabled(!torchEnabled);
-        console.log(`🔦 Torch ${!torchEnabled ? 'ON' : 'OFF'}`);
         toast.success(torchEnabled ? 'Torch off' : 'Torch on', { duration: 1000 });
       } else {
-        toast.error('Torch not available on this device');
+        toast.error('Torch not available on this device', { duration: 2000 });
       }
     } catch (err) {
       console.error('Torch error:', err);
@@ -172,7 +154,6 @@ export default function Scan() {
 
   const stopCamera = () => {
     if (streamRef.current) {
-      console.log('⏹️ Stopping camera...');
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
       setTorchEnabled(false);
@@ -469,6 +450,7 @@ export default function Scan() {
                   size="icon"
                   onClick={toggleTorch}
                   className="text-white hover:bg-white/20"
+                  title="Toggle flashlight"
                 >
                   {torchEnabled ? <FlashlightOff className="w-5 h-5" /> : <Flashlight className="w-5 h-5" />}
                 </Button>
@@ -479,6 +461,7 @@ export default function Scan() {
                 onClick={() => {
                   stopCamera();
                   setShowScanner(false);
+                  setManualEntry('');
                 }}
                 className="text-white hover:bg-white/20"
               >
@@ -487,45 +470,53 @@ export default function Scan() {
             </div>
           </div>
           
-          <video 
-            ref={videoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover"
-            onLoadedMetadata={startCamera}
-          />
+          {!cameraError && (
+            <video 
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover"
+              onLoadedMetadata={startCamera}
+            />
+          )}
           
           <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/95 to-transparent">
             <div className="space-y-4">
-              {!cameraError && (
-                <p className="text-white text-center text-sm">Position barcode within frame</p>
+              {!cameraError && !streamRef.current && (
+                <div className="text-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-white mx-auto mb-2" />
+                  <p className="text-white text-sm">Starting camera...</p>
+                </div>
+              )}
+              
+              {!cameraError && streamRef.current && (
+                <p className="text-white text-center text-sm font-medium">Position barcode within frame</p>
               )}
               
               {cameraPermissionBlocked && (
-                <div className="bg-red-600/95 text-white p-4 rounded-xl">
+                <div className="bg-red-500 text-white p-5 rounded-xl">
                   <div className="flex items-start gap-3">
-                    <AlertCircle className="w-6 h-6 flex-shrink-0 mt-0.5" />
+                    <AlertCircle className="w-7 h-7 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-bold mb-2">Camera Access Blocked</p>
-                      <p className="text-sm mb-3">To use the camera scanner, you need to allow camera access in your browser settings.</p>
-                      <div className="bg-white/20 rounded-lg p-3 text-xs space-y-1">
-                        <p className="font-semibold">Chrome/Edge:</p>
-                        <p>Settings → Site settings → Camera → Allow for this site</p>
-                        <p className="mt-2 font-semibold">Safari (iOS):</p>
-                        <p>Settings → Safari → Camera → Allow</p>
+                      <p className="font-bold text-lg mb-2">Camera Access Denied or Failed</p>
+                      <p className="text-sm mb-3">Check browser settings:</p>
+                      <div className="bg-white/20 rounded-lg p-3 text-sm space-y-2">
+                        <p><strong>Safari:</strong> Settings → Safari → Camera → Allow</p>
+                        <p><strong>Chrome:</strong> Settings → Site Settings → Camera → Allow</p>
                       </div>
-                      <p className="text-xs mt-3 opacity-80">Or use manual entry below 👇</p>
+                      <p className="text-sm mt-3 font-semibold">Or use manual entry below ↓</p>
                     </div>
                   </div>
                 </div>
               )}
               
               {cameraError && !cameraPermissionBlocked && (
-                <div className="bg-amber-600/95 text-white p-4 rounded-xl">
+                <div className="bg-amber-500 text-white p-4 rounded-xl">
                   <div className="flex items-center gap-3">
                     <AlertCircle className="w-6 h-6 flex-shrink-0" />
                     <div>
-                      <p className="font-bold">Camera Not Available</p>
+                      <p className="font-bold text-lg">Camera Not Available</p>
                       <p className="text-sm mt-1">Use manual entry below</p>
                     </div>
                   </div>
@@ -533,22 +524,22 @@ export default function Scan() {
               )}
               
               <div className="space-y-2">
-                <Label className="text-white text-sm font-semibold">Manual Entry:</Label>
+                <Label className="text-white text-base font-bold">Enter Barcode Manually:</Label>
                 <div className="flex gap-2">
                   <Input
                     value={manualEntry}
                     onChange={(e) => setManualEntry(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleManualScan()}
-                    placeholder="Type or paste barcode..."
+                    onKeyDown={(e) => e.key === 'Enter' && manualEntry.trim() && handleManualScan()}
+                    placeholder="Type or paste barcode here..."
                     className="h-16 text-lg bg-white font-mono"
                     autoFocus
                   />
                   <Button 
                     onClick={handleManualScan}
-                    disabled={!manualEntry.trim()}
-                    className="h-16 px-8 bg-blue-600 hover:bg-blue-700 text-base font-semibold"
+                    disabled={!manualEntry.trim() || loading}
+                    className="h-16 px-8 bg-blue-600 hover:bg-blue-700 text-base font-bold"
                   >
-                    Lookup
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Lookup'}
                   </Button>
                 </div>
               </div>
@@ -570,14 +561,16 @@ export default function Scan() {
             onClick={() => {
               setShowScanner(true);
               setCameraError(false);
+              setCameraPermissionBlocked(false);
+              setManualEntry('');
             }}
             size="lg"
             className="w-full h-24 text-xl bg-white text-blue-600 hover:bg-blue-50 shadow-lg"
           >
             <Camera className="w-10 h-10 mr-3" />
             <div className="text-left">
-              <div className="font-bold">Scan Barcode</div>
-              <div className="text-sm font-normal">Camera or manual entry</div>
+              <div className="font-bold">Start Camera Scan</div>
+              <div className="text-sm font-normal">Or enter barcode manually</div>
             </div>
           </Button>
         </CardContent>
