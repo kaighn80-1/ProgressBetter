@@ -908,10 +908,10 @@ export default function Scan() {
                     variant="outline"
                     onClick={() => setShowAddStockDialog(true)}
                     size="lg"
-                    className="h-20 text-base flex-col gap-1 border-2"
+                    className="h-20 text-base flex-col gap-1 border-2 border-amber-300 hover:bg-amber-50"
                   >
-                    <Plus className="w-6 h-6" />
-                    <span>Add to Stock</span>
+                    <Plus className="w-6 h-6 text-amber-600" />
+                    <span className="text-amber-900 font-semibold">Add Raw Stock</span>
                   </Button>
                 </div>
                 
