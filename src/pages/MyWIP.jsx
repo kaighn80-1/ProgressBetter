@@ -291,19 +291,19 @@ export default function MyWIP() {
         notes: pauseForm.notes || 'Paused by operator'
       });
 
-      // Return parts to stock
+      // Return parts to RAW stock (not finished, they're still unfinished)
       const partData = await base44.entities.Part.filter({ id: selectedWip.part_id });
       if (partData.length > 0) {
-        const newStock = (partData[0].finished_stock || 0) + selectedWip.quantity;
+        const newStock = (partData[0].raw_stock || 0) + selectedWip.quantity;
         await base44.entities.Part.update(selectedWip.part_id, {
-          finished_stock: newStock
+          raw_stock: newStock
         });
       }
 
       await base44.entities.StockTransaction.create({
         part_id: selectedWip.part_id,
         part_name: selectedWip.part_name,
-        transaction_type: 'completed_wip',
+        transaction_type: 'adjustment',
         quantity_change: selectedWip.quantity,
         wip_id: selectedWip.id,
         operation_name: selectedWip.operation_name,
