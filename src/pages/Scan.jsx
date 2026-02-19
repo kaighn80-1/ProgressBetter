@@ -120,18 +120,11 @@ export default function Scan() {
         rememberLastUsedCamera: true,
         experimentalFeatures: {
           useBarCodeDetectorIfSupported: true
-        },
-        formatsToSupport: [
-          Html5Qrcode.SCAN_TYPE_CAMERA
-        ]
+        }
       };
       
-      // Request camera with advanced constraints
       await html5QrCode.start(
-        { 
-          facingMode: "environment",
-          advanced: [{ focusMode: "continuous" }]
-        },
+        { facingMode: "environment" },
         config,
         (decodedText, decodedResult) => {
           console.log('✅ Barcode detected:', decodedText);
@@ -162,10 +155,7 @@ export default function Scan() {
               if (currentState === 2) { // SCANNING
                 await html5QrCodeRef.current.stop();
                 await html5QrCodeRef.current.start(
-                  { 
-                    facingMode: "environment",
-                    advanced: [{ focusMode: "continuous" }]
-                  },
+                  { facingMode: "environment" },
                   config,
                   (decodedText) => {
                     console.log('✅ Barcode detected:', decodedText);
