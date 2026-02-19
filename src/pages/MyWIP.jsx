@@ -153,30 +153,41 @@ export default function MyWIP() {
         status: 'completed'
       });
 
-      // Add back to finished stock
+      // Add to FINISHED stock (not raw)
       const parts = await base44.entities.Part.filter({ id: selectedWip.part_id });
       if (parts.length > 0) {
-        const newStock = (parts[0].finished_stock || 0) + selectedWip.quantity;
-        await base44.entities.Part.update(selectedWip.part_id, {
-          finished_stock: newStock
-        });
+        const part = parts[0];
+        
+        // Handle symmetric opposites
+        if (part.allow_sym_opp && selectedWip.variant) {
+          const stockField = selectedWip.variant === 'LH' ? 'lh_stock' : 'rh_stock';
+          const newStock = (part[stockField] || 0) + selectedWip.quantity;
+          await base44.entities.Part.update(selectedWip.part_id, {
+            [stockField]: newStock
+          });
+        } else {
+          const newStock = (part.finished_stock || 0) + selectedWip.quantity;
+          await base44.entities.Part.update(selectedWip.part_id, {
+            finished_stock: newStock
+          });
+        }
       }
 
-      // Create transaction
+      // Create transaction with new type
       await base44.entities.StockTransaction.create({
         part_id: selectedWip.part_id,
         part_name: selectedWip.part_name,
-        transaction_type: 'completed_wip',
+        transaction_type: 'completed_production',
         quantity_change: selectedWip.quantity,
         wip_id: selectedWip.id,
         operation_name: selectedWip.operation_name,
         user_email: user?.email,
         user_name: user?.full_name,
-        notes: completeForm.notes || 'WIP completed and returned to stock'
+        notes: completeForm.notes || 'Production completed - added to finished stock'
       });
 
-      toast.success('Batch completed!', { 
-        description: `${selectedWip.quantity} units returned to stock` 
+      toast.success('✓ Production completed!', { 
+        description: `${selectedWip.quantity} units added to finished stock` 
       });
       setShowCompleteDialog(false);
       setCompleteForm({ notes: '' });
