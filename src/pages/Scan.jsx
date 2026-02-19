@@ -54,6 +54,7 @@ export default function Scan() {
   const [torchEnabled, setTorchEnabled] = useState(false);
   const [showFixings, setShowFixings] = useState(false);
   const [fixingDetails, setFixingDetails] = useState([]);
+  const cameraTimeoutRef = useRef(null);
 
   // Action dialogs
   const [showWipDialog, setShowWipDialog] = useState(false);
@@ -66,6 +67,18 @@ export default function Scan() {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  useEffect(() => {
+    if (showScanner && !cameraError) {
+      startCamera();
+    }
+    return () => {
+      stopCamera();
+      if (cameraTimeoutRef.current) {
+        clearTimeout(cameraTimeoutRef.current);
+      }
+    };
+  }, [showScanner]);
 
   const loadInitialData = async () => {
     try {
@@ -84,18 +97,35 @@ export default function Scan() {
     setCameraError(false);
     setCameraPermissionBlocked(false);
     
+    // Set timeout for camera buffering
+    cameraTimeoutRef.current = setTimeout(() => {
+      if (!streamRef.current) {
+        setCameraError(true);
+        toast.error('Camera buffering timeout', {
+          description: 'Check permissions or use manual entry',
+          duration: 5000
+        });
+      }
+    }, 5000);
+    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          aspectRatio: { ideal: 1.777 }
         } 
       });
       
-      if (videoRef.current) {
+      if (cameraTimeoutRef.current) {
+        clearTimeout(cameraTimeoutRef.current);
+      }
+      
+      if (videoRef.current && showScanner) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
+        
+        // Wait for video to be ready
+        await videoRef.current.play();
         
         // Check if torch is available
         const videoTrack = stream.getVideoTracks()[0];
@@ -103,10 +133,14 @@ export default function Scan() {
         if (capabilities?.torch) {
           // Torch available
         }
+        
+        toast.success('Camera ready', { duration: 1500 });
+      }
+    } catch (err) {
+      if (cameraTimeoutRef.current) {
+        clearTimeout(cameraTimeoutRef.current);
       }
       
-      toast.success('Camera ready', { duration: 1500 });
-    } catch (err) {
       console.error('Camera error:', err);
       setCameraError(true);
       
@@ -153,11 +187,19 @@ export default function Scan() {
   };
 
   const stopCamera = () => {
+    if (cameraTimeoutRef.current) {
+      clearTimeout(cameraTimeoutRef.current);
+    }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
-      setTorchEnabled(false);
     }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setTorchEnabled(false);
+    setCameraError(false);
+    setCameraPermissionBlocked(false);
   };
 
   const vibrateDevice = () => {
@@ -476,7 +518,6 @@ export default function Scan() {
               playsInline
               muted
               className="w-full h-full object-cover"
-              onLoadedMetadata={startCamera}
             />
           )}
           
@@ -578,8 +619,6 @@ export default function Scan() {
             <Button 
               onClick={() => {
                 setShowScanner(true);
-                setCameraError(false);
-                setCameraPermissionBlocked(false);
               }}
               variant="outline"
               size="lg"
