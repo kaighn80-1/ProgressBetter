@@ -70,6 +70,12 @@ export default function Parts() {
     location: '',
     required_fixings: [],
     allow_sym_opp: false,
+    lh_variant_part_id: '',
+    rh_variant_part_id: '',
+    lh_part_number_override: '',
+    lh_part_name_override: '',
+    rh_part_number_override: '',
+    rh_part_name_override: '',
     lh_notes: '',
     rh_notes: ''
   });
