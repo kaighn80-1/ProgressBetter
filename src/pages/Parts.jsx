@@ -147,11 +147,11 @@ export default function Parts() {
       const projB = b.project_num ?? 0;
       if (projA !== projB) return projA - projB;
       
-      // 2. Module letter ascending A→Z (flipped to fix display order)
+      // 2. Module letter ascending A→Z
       const modA = (a.module_letter || '').toUpperCase();
       const modB = (b.module_letter || '').toUpperCase();
-      if (modA > modB) return -1;  // Reversed comparison
-      if (modA < modB) return 1;   // Reversed comparison
+      if (modA < modB) return -1;  // A before L
+      if (modA > modB) return 1;   // L after A
       
       // 3. Part seq ascending
       const seqA = a.part_seq ?? 0;
