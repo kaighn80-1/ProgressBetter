@@ -136,7 +136,7 @@ export default function Parts() {
   };
 
   // Always force ascending: project_num (low→high) → module_letter (A→Z) → part_seq (low→high)
-  const filteredParts = parts
+  let filteredParts = parts
     .filter(p =>
       p.part_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.part_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -156,33 +156,12 @@ export default function Parts() {
       const seqA = a.part_seq ?? 0;
       const seqB = b.part_seq ?? 0;
       return seqA - seqB;
-    })
-    .slice()
-    .reverse()
-    .filter(() => reverseOrder)
-    .concat(
-      parts
-        .filter(p =>
-          p.part_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.part_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.barcode?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-        .sort((a, b) => {
-          const projA = a.project_num ?? 0;
-          const projB = b.project_num ?? 0;
-          if (projA !== projB) return projA - projB;
-          
-          const modA = (a.module_letter || '').toUpperCase();
-          const modB = (b.module_letter || '').toUpperCase();
-          if (modA < modB) return -1;
-          if (modA > modB) return 1;
-          
-          const seqA = a.part_seq ?? 0;
-          const seqB = b.part_seq ?? 0;
-          return seqA - seqB;
-        })
-        .filter(() => !reverseOrder)
-    );
+    });
+  
+  // Apply reverse toggle if enabled
+  if (reverseOrder) {
+    filteredParts = filteredParts.slice().reverse();
+  }
 
   const openAddDialog = () => {
     setEditingPart(null);
