@@ -665,53 +665,126 @@ export default function DeliveryNotes() {
 
           {step === 2 && (
             <div className="space-y-4 py-4">
-              <h3 className="font-semibold" style={{ color: '#1E293B' }}>Select Parts to Deliver</h3>
-              {getEligibleParts().length === 0 ? (
-                <p style={{ color: '#64748B' }}>No completed parts available for this project.</p>
-              ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {getEligibleParts()
-                    .sort((a, b) => {
-                      // Force ascending: project_num → module_letter (A→Z) → part_seq
-                      const projA = a.project_num ?? 0;
-                      const projB = b.project_num ?? 0;
-                      if (projA !== projB) return projA - projB;
-                      
-                      const modA = (a.module_letter || '').toUpperCase();
-                      const modB = (b.module_letter || '').toUpperCase();
-                      if (modA < modB) return -1;
-                      if (modA > modB) return 1;
-                      
-                      const seqA = a.part_seq ?? 0;
-                      const seqB = b.part_seq ?? 0;
-                      return seqA - seqB;
-                    })
-                    .map((part) => (
-                    <div key={part.id} className="p-3 rounded-lg" style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <p className="font-bold" style={{ color: '#1E293B' }}>{part.part_number}</p>
-                          <p className="text-xs font-medium" style={{ color: '#64748B' }}>{part.part_name}</p>
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => setDeliveryMode('assembly')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    deliveryMode === 'assembly'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <Package className="w-4 h-4 inline mr-2" />
+                  Assemblies
+                </button>
+                <button
+                  onClick={() => setDeliveryMode('part')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    deliveryMode === 'part'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <Package className="w-4 h-4 inline mr-2" />
+                  Individual Parts
+                </button>
+              </div>
+
+              {deliveryMode === 'assembly' ? (
+                <>
+                  <h3 className="font-semibold" style={{ color: '#1E293B' }}>Select Assemblies to Deliver</h3>
+                  {getEligibleAssemblies().length === 0 ? (
+                    <p style={{ color: '#64748B' }}>No completed assemblies available.</p>
+                  ) : (
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {getEligibleAssemblies().map((assembly) => (
+                        <div key={assembly.id} className="p-4 rounded-lg" style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <p className="font-bold" style={{ color: '#1E293B' }}>{assembly.assembly_number}</p>
+                              <p className="text-sm font-medium" style={{ color: '#64748B' }}>{assembly.assembly_name}</p>
+                            </div>
+                            <Badge style={{ backgroundColor: '#D1FAE5', color: '#065F46' }}>
+                              Available: {assembly.completed_quantity || 0}
+                            </Badge>
+                          </div>
+                          
+                          {getChildParts(assembly.id).length > 0 && (
+                            <div className="mb-3 p-2 bg-white rounded" style={{ borderLeft: '3px solid #3B82F6' }}>
+                              <p className="text-xs font-semibold text-slate-600 mb-2">Components:</p>
+                              {getChildParts(assembly.id).map(part => (
+                                <p key={part.id} className="text-xs text-slate-600">• {part.part_number} - {part.part_name}</p>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center gap-2">
+                            <Label className="text-sm">Qty to deliver:</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              max={assembly.completed_quantity || 0}
+                              value={selectedItems[assembly.id] || ''}
+                              onChange={(e) => handleQuantityChange(assembly.id, e.target.value)}
+                              placeholder="0"
+                              className="h-10 w-24"
+                            />
+                          </div>
                         </div>
-                        <Badge style={{ backgroundColor: '#D1FAE5', color: '#065F46' }}>
-                          Available: {part.finished_stock || 0}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Label className="text-sm">Qty to deliver:</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max={part.finished_stock || 0}
-                          value={selectedParts[part.id] || ''}
-                          onChange={(e) => handlePartQuantityChange(part.id, e.target.value)}
-                          placeholder="0"
-                          className="h-10 w-24"
-                        />
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <h3 className="font-semibold" style={{ color: '#1E293B' }}>Select Individual Parts to Deliver</h3>
+                  {getEligibleParts().length === 0 ? (
+                    <p style={{ color: '#64748B' }}>No completed parts available for this project.</p>
+                  ) : (
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {getEligibleParts()
+                        .sort((a, b) => {
+                          const projA = a.project_num ?? 0;
+                          const projB = b.project_num ?? 0;
+                          if (projA !== projB) return projA - projB;
+                          
+                          const modA = (a.module_letter || '').toUpperCase();
+                          const modB = (b.module_letter || '').toUpperCase();
+                          if (modA < modB) return -1;
+                          if (modA > modB) return 1;
+                          
+                          const seqA = a.part_seq ?? 0;
+                          const seqB = b.part_seq ?? 0;
+                          return seqA - seqB;
+                        })
+                        .map((part) => (
+                        <div key={part.id} className="p-3 rounded-lg" style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className="font-bold" style={{ color: '#1E293B' }}>{part.part_number}</p>
+                              <p className="text-xs font-medium" style={{ color: '#64748B' }}>{part.part_name}</p>
+                            </div>
+                            <Badge style={{ backgroundColor: '#D1FAE5', color: '#065F46' }}>
+                              Available: {part.finished_stock || 0}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Label className="text-sm">Qty to deliver:</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              max={part.finished_stock || 0}
+                              value={selectedItems[part.id] || ''}
+                              onChange={(e) => handleQuantityChange(part.id, e.target.value)}
+                              placeholder="0"
+                              className="h-10 w-24"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
