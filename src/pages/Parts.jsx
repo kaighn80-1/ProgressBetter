@@ -47,7 +47,6 @@ export default function Parts() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [user, setUser] = useState(null);
-  const [reverseOrder, setReverseOrder] = useState(false);
   
   const [form, setForm] = useState({
     part_name: '',
@@ -136,32 +135,18 @@ export default function Parts() {
   };
 
   // Always force ascending: project_num (low→high) → module_letter (A→Z) → part_seq (low→high)
-  let filteredParts = parts
+  const filteredParts = parts
     .filter(p =>
       p.part_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.part_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.barcode?.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => {
-      // Sort ascending: project_num → module_letter (A→Z) → part_seq
-      const projA = a.project_num ?? 0;
-      const projB = b.project_num ?? 0;
-      if (projA !== projB) return projA - projB;
-      
-      const modA = (a.module_letter || '').toUpperCase();
-      const modB = (b.module_letter || '').toUpperCase();
-      if (modA < modB) return -1;
-      if (modA > modB) return 1;
-      
-      const seqA = a.part_seq ?? 0;
-      const seqB = b.part_seq ?? 0;
-      return seqA - seqB;
+      // Sort by part_number descending (string comparison)
+      const partNumA = (a.part_number || '').toString();
+      const partNumB = (b.part_number || '').toString();
+      return partNumB.localeCompare(partNumA);
     });
-  
-  // Apply reverse toggle if enabled
-  if (reverseOrder) {
-    filteredParts = filteredParts.slice().reverse();
-  }
 
   const openAddDialog = () => {
     setEditingPart(null);
@@ -438,8 +423,8 @@ export default function Parts() {
         </Button>
       </div>
 
-      {/* Search & Toggle */}
-      <div className="flex gap-3"><div className="relative flex-1">
+      {/* Search */}
+      <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
         <Input
           placeholder="Search parts..."
@@ -955,10 +940,19 @@ export default function Parts() {
                                 p.part_number?.toUpperCase().includes('RHD')
                               )
                               .sort((a, b) => {
-                                // Sort by part_number descending
-                                const partNumA = (a.part_number || '').toString();
-                                const partNumB = (b.part_number || '').toString();
-                                return partNumB.localeCompare(partNumA);
+                                // Force ascending: project_num → module_letter (A→Z) → part_seq
+                                const projA = a.project_num ?? 0;
+                                const projB = b.project_num ?? 0;
+                                if (projA !== projB) return projA - projB;
+                                
+                                const modA = (a.module_letter || '').toUpperCase();
+                                const modB = (b.module_letter || '').toUpperCase();
+                                if (modA < modB) return -1;
+                                if (modA > modB) return 1;
+                                
+                                const seqA = a.part_seq ?? 0;
+                                const seqB = b.part_seq ?? 0;
+                                return seqA - seqB;
                               })
                               .map(p => (
                                 <SelectItem key={p.id} value={p.id}>
