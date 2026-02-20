@@ -60,7 +60,7 @@ export default function Scan() {
   const [showWipDialog, setShowWipDialog] = useState(false);
   const [showAddStockDialog, setShowAddStockDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-  const [wipForm, setWipForm] = useState({ operation_id: '', quantity: '', notes: '', variant: '', rh_part_number: '', rh_part_name: '' });
+  const [wipForm, setWipForm] = useState({ operation_id: '', quantity: '', lh_quantity: '', rh_quantity: '', notes: '' });
   const [addStockForm, setAddStockForm] = useState({ quantity: '', notes: '', variant: '' });
   const [saving, setSaving] = useState(false);
 
@@ -330,20 +330,23 @@ export default function Scan() {
       return;
     }
 
-    if (scannedPart.allow_sym_opp && !wipForm.variant) {
-      toast.error('Please select LH or RH variant');
+    const totalQty = parseInt(wipForm.quantity);
+    const lhQty = parseInt(wipForm.lh_quantity) || 0;
+    const rhQty = parseInt(wipForm.rh_quantity) || 0;
+
+    if (scannedPart.allow_sym_opp && (lhQty + rhQty !== totalQty)) {
+      toast.error('LH Quantity + RH Quantity must equal Total Quantity');
       return;
     }
 
-    if (scannedPart.allow_sym_opp && wipForm.variant === 'RH' && !wipForm.rh_part_number) {
-      toast.error('Please enter RH Part Number');
+    if (scannedPart.allow_sym_opp && rhQty > 0 && !scannedPart.rh_part_number) {
+      toast.error('RH Part Number not set on this blank part. Contact manager.');
       return;
     }
 
     setSaving(true);
     try {
       const operation = operations.find(o => o.id === wipForm.operation_id);
-      const qty = parseInt(wipForm.quantity);
       
       const wipData = {
         part_id: scannedPart.id,
@@ -351,19 +354,17 @@ export default function Scan() {
         part_barcode: scannedPart.barcode,
         operation_id: wipForm.operation_id,
         operation_name: operation?.operation_name,
-        quantity: qty,
-        variant: scannedPart.allow_sym_opp ? wipForm.variant : 'none',
+        quantity: totalQty,
+        lh_quantity: scannedPart.allow_sym_opp ? lhQty : totalQty,
+        rh_quantity: scannedPart.allow_sym_opp ? rhQty : 0,
+        rh_part_number: scannedPart.rh_part_number || '',
+        rh_part_name: scannedPart.rh_part_name || '',
         started_date: new Date().toISOString(),
         worker_email: user?.email,
         worker_name: user?.full_name,
         notes: wipForm.notes,
         status: 'active'
       };
-
-      if (scannedPart.allow_sym_opp && wipForm.variant === 'RH') {
-        wipData.rh_part_number = wipForm.rh_part_number;
-        wipData.rh_part_name = wipForm.rh_part_name || `${scannedPart.part_name} RH`;
-      }
       
       await base44.entities.WorkInProgress.create(wipData);
 
@@ -372,7 +373,7 @@ export default function Scan() {
         part_id: scannedPart.id,
         part_name: scannedPart.part_name,
         transaction_type: 'moved_to_wip',
-        quantity_change: -qty,
+        quantity_change: -totalQty,
         operation_name: operation?.operation_name,
         user_email: user?.email,
         user_name: user?.full_name,
@@ -381,14 +382,14 @@ export default function Scan() {
 
       // Deduct from RAW stock (starting production uses raw blanks)
       await base44.entities.Part.update(scannedPart.id, {
-        raw_stock: Math.max(0, (scannedPart.raw_stock || 0) - qty)
+        raw_stock: Math.max(0, (scannedPart.raw_stock || 0) - totalQty)
       });
 
       toast.success('WIP batch started!', {
-        description: scannedPart.allow_sym_opp ? `${wipForm.variant} variant` : undefined
+        description: scannedPart.allow_sym_opp ? `${lhQty} LH, ${rhQty} RH` : undefined
       });
       setShowWipDialog(false);
-      setWipForm({ operation_id: '', quantity: '', notes: '', variant: '', rh_part_number: '', rh_part_name: '' });
+      setWipForm({ operation_id: '', quantity: '', lh_quantity: '', rh_quantity: '', notes: '' });
       
       // Navigate to My WIP
       navigate(createPageUrl('MyWIP'));
