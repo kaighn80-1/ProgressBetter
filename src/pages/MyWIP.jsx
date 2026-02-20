@@ -153,41 +153,82 @@ export default function MyWIP() {
         status: 'completed'
       });
 
-      // Add to FINISHED stock (not raw)
+      // Get the blank part
       const parts = await base44.entities.Part.filter({ id: selectedWip.part_id });
-      if (parts.length > 0) {
-        const part = parts[0];
-        
-        // Handle symmetric opposites
-        if (part.allow_sym_opp && selectedWip.variant) {
-          const stockField = selectedWip.variant === 'LH' ? 'lh_stock' : 'rh_stock';
-          const newStock = (part[stockField] || 0) + selectedWip.quantity;
-          await base44.entities.Part.update(selectedWip.part_id, {
-            [stockField]: newStock
-          });
-        } else {
-          const newStock = (part.finished_stock || 0) + selectedWip.quantity;
-          await base44.entities.Part.update(selectedWip.part_id, {
-            finished_stock: newStock
-          });
-        }
+      if (parts.length === 0) {
+        toast.error('Part not found');
+        setSaving(false);
+        return;
       }
 
-      // Create transaction with new type
+      const blankPart = parts[0];
+      let targetPart = blankPart;
+      let targetPartId = blankPart.id;
+      let targetPartName = blankPart.part_name;
+      let targetPartNumber = blankPart.part_number;
+      
+      // Handle symmetric opposites - add to linked variant part
+      if (blankPart.allow_sym_opp && selectedWip.variant) {
+        const variantPartId = selectedWip.variant === 'LH' ? blankPart.lh_variant_part_id : blankPart.rh_variant_part_id;
+        
+        if (!variantPartId) {
+          toast.error(`No ${selectedWip.variant} variant part linked. Cannot complete.`);
+          setSaving(false);
+          return;
+        }
+
+        // Fetch the variant part
+        const variantParts = await base44.entities.Part.filter({ id: variantPartId });
+        if (variantParts.length === 0) {
+          toast.error(`Variant part not found`);
+          setSaving(false);
+          return;
+        }
+
+        targetPart = variantParts[0];
+        targetPartId = targetPart.id;
+        
+        // Use overrides if available
+        const numberOverride = selectedWip.variant === 'LH' ? blankPart.lh_part_number_override : blankPart.rh_part_number_override;
+        const nameOverride = selectedWip.variant === 'LH' ? blankPart.lh_part_name_override : blankPart.rh_part_name_override;
+        
+        targetPartNumber = numberOverride || targetPart.part_number;
+        targetPartName = nameOverride || targetPart.part_name;
+
+        // Add to variant part's finished stock
+        const newStock = (targetPart.finished_stock || 0) + selectedWip.quantity;
+        await base44.entities.Part.update(targetPartId, {
+          finished_stock: newStock
+        });
+      } else {
+        // Standard completion - add to blank's finished stock
+        const newStock = (blankPart.finished_stock || 0) + selectedWip.quantity;
+        await base44.entities.Part.update(blankPart.id, {
+          finished_stock: newStock
+        });
+      }
+
+      // Create transaction
       await base44.entities.StockTransaction.create({
-        part_id: selectedWip.part_id,
-        part_name: selectedWip.part_name,
+        part_id: targetPartId,
+        part_name: targetPartName,
         transaction_type: 'completed_production',
         quantity_change: selectedWip.quantity,
         wip_id: selectedWip.id,
         operation_name: selectedWip.operation_name,
         user_email: user?.email,
         user_name: user?.full_name,
-        notes: completeForm.notes || 'Production completed - added to finished stock'
+        notes: blankPart.allow_sym_opp && selectedWip.variant 
+          ? `Completed ${selectedWip.variant} variant → ${targetPartNumber} (${targetPartName})`
+          : completeForm.notes || 'Production completed - added to finished stock'
       });
 
+      const message = blankPart.allow_sym_opp && selectedWip.variant
+        ? `${selectedWip.quantity} units added to ${targetPartNumber} (${selectedWip.variant})`
+        : `${selectedWip.quantity} units added to finished stock`;
+
       toast.success('✓ Production completed!', { 
-        description: `${selectedWip.quantity} units added to finished stock` 
+        description: message
       });
       setShowCompleteDialog(false);
       setCompleteForm({ notes: '' });
