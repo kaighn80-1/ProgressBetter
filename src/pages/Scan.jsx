@@ -659,8 +659,8 @@ export default function Scan() {
                   <div className="flex items-center gap-3">
                     <Package className="w-5 h-5 text-slate-400" />
                     <div>
-                      <p className="font-medium text-sm">{part.part_name}</p>
-                      <p className="text-xs text-slate-500">{part.part_number}</p>
+                      <p className="font-bold text-base">{part.part_number}</p>
+                      <p className="text-xs text-slate-500">{part.part_name}</p>
                     </div>
                   </div>
                   <Badge variant="secondary">{part.finished_stock || 0} {part.unit || 'pcs'}</Badge>
@@ -697,7 +697,8 @@ export default function Scan() {
                     </div>
                   )}
                   <div>
-                    <CardTitle className="text-lg">{scannedPart.part_name}</CardTitle>
+                    <CardTitle className="text-2xl font-bold">{scannedPart.part_number}</CardTitle>
+                    <p className="text-sm text-slate-600 font-medium mt-1">{scannedPart.part_name}</p>
                     <p className="text-sm text-slate-500">{scannedPart.part_number}</p>
                     <p className="text-xs text-slate-400 font-mono mt-1">{scannedPart.barcode}</p>
                   </div>
