@@ -215,6 +215,9 @@ export default function MyWIP() {
           notes: `Completed LH → ${blankPart.part_number}`
         });
 
+
+         await rollupToAssembly(blankPart, lhQty);
+
         successMsg = `${lhQty} LH on ${blankPart.part_number}`;
       }
 
