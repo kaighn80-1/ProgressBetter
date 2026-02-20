@@ -609,12 +609,26 @@ export default function DeliveryNotes() {
                 <p style={{ color: '#64748B' }}>No completed parts available for this project.</p>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {getEligibleParts().map((part) => (
+                  {getEligibleParts()
+                    .sort((a, b) => {
+                      const projA = a.project_num ?? 0;
+                      const projB = b.project_num ?? 0;
+                      if (projA !== projB) return projA - projB;
+                      
+                      const modA = (a.module_letter || '').toLowerCase();
+                      const modB = (b.module_letter || '').toLowerCase();
+                      if (modA !== modB) return modA.localeCompare(modB);
+                      
+                      const seqA = a.part_seq ?? 0;
+                      const seqB = b.part_seq ?? 0;
+                      return seqA - seqB;
+                    })
+                    .map((part) => (
                     <div key={part.id} className="p-3 rounded-lg" style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <p className="font-medium" style={{ color: '#1E293B' }}>{part.part_name}</p>
-                          <p className="text-xs" style={{ color: '#64748B' }}>{part.part_number}</p>
+                          <p className="font-bold" style={{ color: '#1E293B' }}>{part.part_number}</p>
+                          <p className="text-xs font-medium" style={{ color: '#64748B' }}>{part.part_name}</p>
                         </div>
                         <Badge style={{ backgroundColor: '#D1FAE5', color: '#065F46' }}>
                           Available: {part.finished_stock || 0}
