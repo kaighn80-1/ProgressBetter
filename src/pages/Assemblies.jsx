@@ -430,7 +430,7 @@ function AssemblyCard({ assembly, isExpanded, onToggleExpand, onEdit, onDelete, 
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-4 gap-4 mb-4">
             <div className="p-3 bg-white rounded-lg border">
               <p className="text-xs text-slate-600 font-semibold">Target</p>
               <p className="text-xl font-bold" style={{ color: '#3B82F6' }}>{assembly.target_quantity}</p>
@@ -438,6 +438,10 @@ function AssemblyCard({ assembly, isExpanded, onToggleExpand, onEdit, onDelete, 
             <div className="p-3 bg-white rounded-lg border">
               <p className="text-xs text-slate-600 font-semibold">Completed</p>
               <p className="text-xl font-bold" style={{ color: '#10B981' }}>{assembly.completed_quantity}</p>
+            </div>
+            <div className="p-3 bg-white rounded-lg border" style={{ borderColor: '#3B82F6', borderWidth: '2px', backgroundColor: '#EFF6FF' }}>
+              <p className="text-xs font-semibold" style={{ color: '#1E40AF' }}>Available for Delivery</p>
+              <p className="text-xl font-bold" style={{ color: '#3B82F6' }}>{assembly.completed_quantity || 0}</p>
             </div>
             <div className="p-3 bg-white rounded-lg border">
               <p className="text-xs text-slate-600 font-semibold">Stock</p>
