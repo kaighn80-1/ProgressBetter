@@ -158,18 +158,30 @@ export default function DeliveryNotes() {
 
   const filteredNotes = getFilteredNotes();
 
+  const getEligibleAssemblies = () => {
+    if (!selectedProject) return [];
+    return assemblies.filter(a => 
+      (a.completed_quantity || 0) > 0
+    );
+  };
+
   const getEligibleParts = () => {
     if (!selectedProject) return [];
     return parts.filter(p => 
       p.project_id === selectedProject && 
+      !p.parent_assembly_id &&
       (p.finished_stock || 0) > 0
     );
   };
 
-  const handlePartQuantityChange = (partId, quantity) => {
-    setSelectedParts(prev => ({
+  const getChildParts = (assemblyId) => {
+    return parts.filter(p => p.parent_assembly_id === assemblyId);
+  };
+
+  const handleQuantityChange = (id, quantity) => {
+    setSelectedItems(prev => ({
       ...prev,
-      [partId]: parseInt(quantity) || 0
+      [id]: parseInt(quantity) || 0
     }));
   };
 
