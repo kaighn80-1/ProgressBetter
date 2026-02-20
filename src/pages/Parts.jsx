@@ -100,7 +100,26 @@ export default function Parts() {
         base44.entities.Section.list('order_index'),
         base44.entities.Subsection.list('order_index')
       ]);
-      setParts(partsData);
+      
+      // Sort parts by project_num, module_letter, part_seq
+      const sortedParts = partsData.sort((a, b) => {
+        // Primary sort: project_num
+        const projA = a.project_num ?? 0;
+        const projB = b.project_num ?? 0;
+        if (projA !== projB) return projA - projB;
+        
+        // Secondary sort: module_letter
+        const modA = (a.module_letter || '').toLowerCase();
+        const modB = (b.module_letter || '').toLowerCase();
+        if (modA !== modB) return modA.localeCompare(modB);
+        
+        // Tertiary sort: part_seq
+        const seqA = a.part_seq ?? 0;
+        const seqB = b.part_seq ?? 0;
+        return seqA - seqB;
+      });
+      
+      setParts(sortedParts);
       setOperations(opsData);
       setFixings(fixingsData);
       setProjects(projectsData);
