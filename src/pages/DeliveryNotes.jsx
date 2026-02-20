@@ -964,33 +964,62 @@ export default function DeliveryNotes() {
 
                 <div className="mb-6">
                   <h3 className="font-semibold mb-3" style={{ color: '#1E293B' }}>Items to Deliver</h3>
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr style={{ backgroundColor: '#F1F5F9' }}>
-                        <th className="text-left p-3 border" style={{ color: '#64748B', fontSize: '12px' }}>Part Number</th>
-                        <th className="text-left p-3 border" style={{ color: '#64748B', fontSize: '12px' }}>Part Name</th>
-                        <th className="text-center p-3 border" style={{ color: '#64748B', fontSize: '12px' }}>Quantity</th>
-                        <th className="text-center p-3 border" style={{ color: '#64748B', fontSize: '12px' }}>Unit</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  {currentNote.selected_parts?.some(item => item.type === 'assembly') ? (
+                    <div className="space-y-3">
                       {currentNote.selected_parts?.map((item, idx) => (
-                        <tr key={idx}>
-                          <td className="p-3 border font-mono text-sm">{item.part_number}</td>
-                          <td className="p-3 border">{item.part_name}</td>
-                          <td className="p-3 border text-center font-bold">{item.quantity}</td>
-                          <td className="p-3 border text-center">{item.unit}</td>
-                        </tr>
+                        <div key={idx} className="p-4 rounded-lg" style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className="font-bold" style={{ color: '#1E293B' }}>{item.assembly_number}</p>
+                              <p className="text-sm" style={{ color: '#64748B' }}>{item.assembly_name}</p>
+                            </div>
+                            <p className="font-bold text-lg" style={{ color: '#3B82F6' }}>Qty: {item.quantity}</p>
+                          </div>
+                          {item.child_parts?.length > 0 && (
+                            <div className="mt-3 p-3 bg-white rounded" style={{ borderLeft: '3px solid #3B82F6' }}>
+                              <p className="text-xs font-semibold text-slate-600 mb-2">Components:</p>
+                              <div className="space-y-1">
+                                {item.child_parts.map((part, pidx) => (
+                                  <p key={pidx} className="text-xs text-slate-600">• {part.part_number} - {part.part_name}</p>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       ))}
-                      <tr style={{ backgroundColor: '#F8FAFC' }}>
-                        <td colSpan="2" className="p-3 border font-bold text-right">Total Quantity:</td>
-                        <td className="p-3 border text-center font-bold text-lg" style={{ color: '#10B981' }}>
-                          {currentNote.total_quantity}
-                        </td>
-                        <td className="p-3 border"></td>
-                      </tr>
-                    </tbody>
-                  </table>
+                      <div className="mt-4 p-3 rounded-lg text-right" style={{ backgroundColor: '#D1FAE5' }}>
+                        <p className="font-bold" style={{ color: '#065F46' }}>Total Quantity: {currentNote.total_quantity} units</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr style={{ backgroundColor: '#F1F5F9' }}>
+                          <th className="text-left p-3 border" style={{ color: '#64748B', fontSize: '12px' }}>Part Number</th>
+                          <th className="text-left p-3 border" style={{ color: '#64748B', fontSize: '12px' }}>Part Name</th>
+                          <th className="text-center p-3 border" style={{ color: '#64748B', fontSize: '12px' }}>Quantity</th>
+                          <th className="text-center p-3 border" style={{ color: '#64748B', fontSize: '12px' }}>Unit</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {currentNote.selected_parts?.map((item, idx) => (
+                          <tr key={idx}>
+                            <td className="p-3 border font-mono text-sm">{item.part_number}</td>
+                            <td className="p-3 border">{item.part_name}</td>
+                            <td className="p-3 border text-center font-bold">{item.quantity}</td>
+                            <td className="p-3 border text-center">{item.unit}</td>
+                          </tr>
+                        ))}
+                        <tr style={{ backgroundColor: '#F8FAFC' }}>
+                          <td colSpan="2" className="p-3 border font-bold text-right">Total Quantity:</td>
+                          <td className="p-3 border text-center font-bold text-lg" style={{ color: '#10B981' }}>
+                            {currentNote.total_quantity}
+                          </td>
+                          <td className="p-3 border"></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  )}
                 </div>
 
                 {currentNote.notes && (
