@@ -876,10 +876,9 @@ export default function Parts() {
                                 p.part_number?.toUpperCase().includes('RH') ||
                                 p.part_number?.toUpperCase().includes('RHD')
                               )
-                              .sort((a, b) => (a.part_name || '').localeCompare(b.part_name || ''))
                               .map(p => (
                                 <SelectItem key={p.id} value={p.id}>
-                                  {p.part_number} - {p.part_name}
+                                  <span className="font-bold">{p.part_number}</span> - {p.part_name}
                                   {p.is_rh_variant && <span className="ml-2 text-xs text-green-600">[RH]</span>}
                                 </SelectItem>
                               ))}
