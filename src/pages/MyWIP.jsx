@@ -94,9 +94,13 @@ export default function MyWIP() {
   const canViewAllWIPs = isAdmin || isSupervisor;
   const filteredWips = filter === 'all' ? wips : wips.filter(w => w.worker_email === user?.email);
 
-  const getPartForWip = (wip) => parts.find(p => p.id === wip.part_id);
+  const getPartForWip = (wip) => {
+    if (!wip) return null;
+    return parts.find(p => p.id === wip.part_id);
+  };
   
   const getWipProgress = (wip) => {
+    if (!wip) return null;
     const part = getPartForWip(wip);
     if (!part?.required_operations?.length) return null;
     const completed = wip.completed_operations?.length || 0;
