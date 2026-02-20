@@ -75,18 +75,20 @@ export default function DeliveryNotes() {
 
   const loadData = async () => {
     try {
-      const [userData, notesData, projectsData, addressesData, partsData] = await Promise.all([
+      const [userData, notesData, projectsData, addressesData, partsData, assembliesData] = await Promise.all([
         base44.auth.me(),
         base44.entities.DeliveryNote.list('-delivery_date'),
         base44.entities.Project.list(),
         base44.entities.DeliveryAddress.list(),
-        base44.entities.Part.list()
+        base44.entities.Part.list(),
+        base44.entities.Assembly.list()
       ]);
       setUser(userData);
       setDeliveryNotes(notesData);
       setProjects(projectsData);
       setAddresses(addressesData);
       setParts(partsData);
+      setAssemblies(assembliesData);
     } catch (e) {
       console.error(e);
       toast.error('Failed to load data');
