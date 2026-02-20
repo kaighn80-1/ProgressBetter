@@ -975,15 +975,11 @@ export default function Scan() {
                   >
                     <div className="text-lg">Left Hand</div>
                     <div className="text-sm opacity-80 mt-1">(LH)</div>
-                    {scannedPart.lh_variant_part_id && (() => {
-                      const lhPart = parts.find(p => p.id === scannedPart.lh_variant_part_id);
-                      const displayNum = scannedPart.lh_part_number_override || lhPart?.part_number;
-                      return displayNum ? <div className="text-xs mt-1 opacity-75">→ {displayNum}</div> : null;
-                    })()}
+                    <div className="text-xs mt-1 opacity-75">→ {scannedPart.part_number}</div>
                   </button>
                   <button
                     type="button"
-                    onClick={() => setWipForm({ ...wipForm, variant: 'RH' })}
+                    onClick={() => setWipForm({ ...wipForm, variant: 'RH', rh_part_number: scannedPart.rh_part_number || '', rh_part_name: scannedPart.rh_part_name || '' })}
                     className={`h-24 rounded-xl border-2 font-semibold transition-all ${
                       wipForm.variant === 'RH'
                         ? 'bg-green-600 border-green-600 text-white shadow-lg'
@@ -992,35 +988,44 @@ export default function Scan() {
                   >
                     <div className="text-lg">Right Hand</div>
                     <div className="text-sm opacity-80 mt-1">(RH)</div>
-                    {scannedPart.rh_variant_part_id && (() => {
-                      const rhPart = parts.find(p => p.id === scannedPart.rh_variant_part_id);
-                      const displayNum = scannedPart.rh_part_number_override || rhPart?.part_number;
-                      return displayNum ? <div className="text-xs mt-1 opacity-75">→ {displayNum}</div> : null;
-                    })()}
+                    {scannedPart.rh_part_number && <div className="text-xs mt-1 opacity-75">→ {scannedPart.rh_part_number}</div>}
                   </button>
                 </div>
-                {wipForm.variant && scannedPart[wipForm.variant === 'LH' ? 'lh_notes' : 'rh_notes'] && (
-                  <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-xs font-medium text-blue-700 mb-1">{wipForm.variant} Processing Notes:</p>
-                    <p className="text-sm text-blue-900">{scannedPart[wipForm.variant === 'LH' ? 'lh_notes' : 'rh_notes']}</p>
+                
+                {wipForm.variant === 'RH' && (
+                  <div className="mt-4 space-y-3">
+                    <div>
+                      <Label>RH Part Number *</Label>
+                      <Input
+                        value={wipForm.rh_part_number}
+                        onChange={(e) => setWipForm({ ...wipForm, rh_part_number: e.target.value })}
+                        placeholder="Enter RH part number"
+                        className="mt-1 h-12"
+                        style={{ borderColor: '#3B82F6', borderWidth: '2px' }}
+                      />
+                    </div>
+                    <div>
+                      <Label>RH Part Name (optional)</Label>
+                      <Input
+                        value={wipForm.rh_part_name}
+                        onChange={(e) => setWipForm({ ...wipForm, rh_part_name: e.target.value })}
+                        placeholder={`${scannedPart.part_name} RH`}
+                        className="mt-1 h-12"
+                        style={{ borderColor: '#3B82F6', borderWidth: '2px' }}
+                      />
+                    </div>
+                    <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                      <p className="text-xs text-green-700">
+                        <span className="font-semibold">On completion:</span> Will create or add to part <span className="font-bold">{wipForm.rh_part_number || '[RH Part Number]'}</span>
+                      </p>
+                    </div>
                   </div>
                 )}
-                {wipForm.variant && (
-                  <div className="mt-2 p-3 bg-slate-50 rounded-lg">
-                    <p className="text-xs text-slate-600">
-                      Completed units will be added to: <span className="font-semibold">{
-                        (() => {
-                          const variantPartId = wipForm.variant === 'LH' ? scannedPart.lh_variant_part_id : scannedPart.rh_variant_part_id;
-                          const variantPart = parts.find(p => p.id === variantPartId);
-                          const displayNum = wipForm.variant === 'LH' 
-                            ? (scannedPart.lh_part_number_override || variantPart?.part_number)
-                            : (scannedPart.rh_part_number_override || variantPart?.part_number);
-                          const displayName = wipForm.variant === 'LH'
-                            ? (scannedPart.lh_part_name_override || variantPart?.part_name)
-                            : (scannedPart.rh_part_name_override || variantPart?.part_name);
-                          return `${displayNum || ''} ${displayName || 'Variant Part'}`;
-                        })()
-                      }</span>
+
+                {wipForm.variant === 'LH' && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-xs text-blue-700">
+                      <span className="font-semibold">On completion:</span> Will add to <span className="font-bold">{scannedPart.part_number}</span> ({scannedPart.part_name})
                     </p>
                   </div>
                 )}
