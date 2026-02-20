@@ -960,73 +960,67 @@ export default function Scan() {
             <DialogTitle>Start WIP Batch</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <div>
+              <Label>Quantity</Label>
+              <Input
+                type="number"
+                value={wipForm.quantity}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const totalQty = parseInt(val) || 0;
+                  setWipForm({ 
+                    ...wipForm, 
+                    quantity: val,
+                    lh_quantity: scannedPart?.allow_sym_opp ? totalQty : '',
+                    rh_quantity: scannedPart?.allow_sym_opp ? '0' : ''
+                  });
+                }}
+                placeholder="Enter quantity"
+                className="mt-1 h-12"
+                min="1"
+              />
+            </div>
+
             {scannedPart?.allow_sym_opp && (
-              <div>
-                <Label className="text-base font-semibold">Process As *</Label>
-                <p className="text-xs text-slate-500 mb-3">Select which variant you're producing from this blank</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setWipForm({ ...wipForm, variant: 'LH' })}
-                    className={`h-24 rounded-xl border-2 font-semibold transition-all ${
-                      wipForm.variant === 'LH'
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
-                        : 'bg-white border-slate-200 text-slate-700 hover:border-blue-400'
-                    }`}
-                  >
-                    <div className="text-lg">Left Hand</div>
-                    <div className="text-sm opacity-80 mt-1">(LH)</div>
-                    <div className="text-xs mt-1 opacity-75">→ {scannedPart.part_number}</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setWipForm({ ...wipForm, variant: 'RH', rh_part_number: scannedPart.rh_part_number || '', rh_part_name: scannedPart.rh_part_name || '' })}
-                    className={`h-24 rounded-xl border-2 font-semibold transition-all ${
-                      wipForm.variant === 'RH'
-                        ? 'bg-green-600 border-green-600 text-white shadow-lg'
-                        : 'bg-white border-slate-200 text-slate-700 hover:border-green-400'
-                    }`}
-                  >
-                    <div className="text-lg">Right Hand</div>
-                    <div className="text-sm opacity-80 mt-1">(RH)</div>
-                    {scannedPart.rh_part_number && <div className="text-xs mt-1 opacity-75">→ {scannedPart.rh_part_number}</div>}
-                  </button>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>LH Quantity</Label>
+                    <Input
+                      type="number"
+                      value={wipForm.lh_quantity}
+                      onChange={(e) => setWipForm({ ...wipForm, lh_quantity: e.target.value })}
+                      placeholder="0"
+                      className="mt-1 h-12"
+                      style={{ borderColor: '#3B82F6', borderWidth: '2px' }}
+                      min="0"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">→ Will add to {scannedPart.part_number}</p>
+                  </div>
+                  <div>
+                    <Label>RH Quantity</Label>
+                    <Input
+                      type="number"
+                      value={wipForm.rh_quantity}
+                      onChange={(e) => setWipForm({ ...wipForm, rh_quantity: e.target.value })}
+                      placeholder="0"
+                      className="mt-1 h-12"
+                      style={{ borderColor: '#10B981', borderWidth: '2px' }}
+                      min="0"
+                    />
+                    {scannedPart.rh_part_number && (
+                      <p className="text-xs text-slate-500 mt-1">→ Will add to {scannedPart.rh_part_number}</p>
+                    )}
+                    {!scannedPart.rh_part_number && (
+                      <p className="text-xs text-red-500 mt-1">⚠️ RH not configured</p>
+                    )}
+                  </div>
                 </div>
                 
-                {wipForm.variant === 'RH' && (
-                  <div className="mt-4 space-y-3">
-                    <div>
-                      <Label>RH Part Number *</Label>
-                      <Input
-                        value={wipForm.rh_part_number}
-                        onChange={(e) => setWipForm({ ...wipForm, rh_part_number: e.target.value })}
-                        placeholder="Enter RH part number"
-                        className="mt-1 h-12"
-                        style={{ borderColor: '#3B82F6', borderWidth: '2px' }}
-                      />
-                    </div>
-                    <div>
-                      <Label>RH Part Name (optional)</Label>
-                      <Input
-                        value={wipForm.rh_part_name}
-                        onChange={(e) => setWipForm({ ...wipForm, rh_part_name: e.target.value })}
-                        placeholder={`${scannedPart.part_name} RH`}
-                        className="mt-1 h-12"
-                        style={{ borderColor: '#3B82F6', borderWidth: '2px' }}
-                      />
-                    </div>
-                    <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                      <p className="text-xs text-green-700">
-                        <span className="font-semibold">On completion:</span> Will create or add to part <span className="font-bold">{wipForm.rh_part_number || '[RH Part Number]'}</span>
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {wipForm.variant === 'LH' && (
-                  <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-xs text-blue-700">
-                      <span className="font-semibold">On completion:</span> Will add to <span className="font-bold">{scannedPart.part_number}</span> ({scannedPart.part_name})
+                {parseInt(wipForm.rh_quantity || 0) > 0 && scannedPart.rh_part_number && (
+                  <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                    <p className="text-xs text-green-700">
+                      <span className="font-semibold">RH will be added to:</span> {scannedPart.rh_part_number}{scannedPart.rh_part_name ? ` – ${scannedPart.rh_part_name}` : ''}
                     </p>
                   </div>
                 )}
