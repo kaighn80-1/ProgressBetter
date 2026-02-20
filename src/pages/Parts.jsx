@@ -134,6 +134,7 @@ export default function Parts() {
     }
   };
 
+  // Always force ascending: project_num (low→high) → module_letter (A→Z) → part_seq (low→high)
   const filteredParts = parts
     .filter(p =>
       p.part_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -141,16 +142,18 @@ export default function Parts() {
       p.barcode?.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => {
-      // Force ascending sort: project_num → module_letter (A→Z) → part_seq
+      // 1. Project num ascending
       const projA = a.project_num ?? 0;
       const projB = b.project_num ?? 0;
       if (projA !== projB) return projA - projB;
       
+      // 2. Module letter ascending A→Z (explicit comparison, no localeCompare)
       const modA = (a.module_letter || '').toUpperCase();
       const modB = (b.module_letter || '').toUpperCase();
       if (modA < modB) return -1;
       if (modA > modB) return 1;
       
+      // 3. Part seq ascending
       const seqA = a.part_seq ?? 0;
       const seqB = b.part_seq ?? 0;
       return seqA - seqB;
