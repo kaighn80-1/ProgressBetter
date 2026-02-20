@@ -319,9 +319,24 @@ export default function Requirements() {
                   <SelectValue placeholder="Select part..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {parts.map((part) => (
+                  {parts
+                    .slice()
+                    .sort((a, b) => {
+                      const projA = a.project_num ?? 0;
+                      const projB = b.project_num ?? 0;
+                      if (projA !== projB) return projA - projB;
+                      
+                      const modA = (a.module_letter || '').toLowerCase();
+                      const modB = (b.module_letter || '').toLowerCase();
+                      if (modA !== modB) return modA.localeCompare(modB);
+                      
+                      const seqA = a.part_seq ?? 0;
+                      const seqB = b.part_seq ?? 0;
+                      return seqA - seqB;
+                    })
+                    .map((part) => (
                     <SelectItem key={part.id} value={part.id}>
-                      {part.part_name} ({part.part_number}) - Stock: {part.finished_stock || 0}
+                      {part.part_number} - {part.part_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
