@@ -158,10 +158,23 @@ export default function DeliveryNotes() {
 
   const filteredNotes = getFilteredNotes();
 
+  const calculateAssemblyAvailableQty = (assembly) => {
+    if (!assembly.required_parts || assembly.required_parts.length === 0) {
+      return 0;
+    }
+
+    const availableQtys = assembly.required_parts.map(req => {
+      const part = parts.find(p => p.id === req.part_id);
+      if (!part) return 0;
+      const stockAvailable = part.finished_stock || 0;
+      return Math.floor(stockAvailable / req.quantity_needed);
+    });
+
+    return Math.min(...availableQtys);
+  };
+
   const getEligibleAssemblies = () => {
-    return assemblies.filter(a => 
-      (a.completed_quantity || 0) > 0
-    ).sort((a, b) => (b.completed_quantity || 0) - (a.completed_quantity || 0));
+    return assemblies.filter(a => calculateAssemblyAvailableQty(a) > 0).sort((a, b) => calculateAssemblyAvailableQty(b) - calculateAssemblyAvailableQty(a));
   };
 
   const getEligibleParts = () => {
