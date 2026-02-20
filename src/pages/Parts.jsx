@@ -93,7 +93,7 @@ export default function Parts() {
   const loadParts = async () => {
     try {
       const [partsData, opsData, fixingsData, projectsData, sectionsData, subsectionsData] = await Promise.all([
-        base44.entities.Part.list('part_name'),
+        base44.entities.Part.list(),
         base44.entities.Operation.list('sequence_number'),
         base44.entities.Fixing.list('fixing_name'),
         base44.entities.Project.list('project_name'),
