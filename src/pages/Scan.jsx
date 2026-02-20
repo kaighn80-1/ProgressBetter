@@ -282,6 +282,12 @@ export default function Scan() {
         p.part_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.barcode?.toLowerCase().includes(searchQuery.toLowerCase())
       );
+      // Sort by project_num, module_letter, part_seq
+      filtered.sort((a, b) => {
+        if (a.project_num !== b.project_num) return (a.project_num || 0) - (b.project_num || 0);
+        if ((a.module_letter || '') !== (b.module_letter || '')) return (a.module_letter || '').localeCompare(b.module_letter || '');
+        return (a.part_seq || 0) - (b.part_seq || 0);
+      });
       setSearchResults(filtered);
     } catch (e) {
       console.error(e);
