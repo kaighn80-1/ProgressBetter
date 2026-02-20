@@ -287,6 +287,9 @@ export default function MyWIP() {
           notes: completeForm.notes || 'Production completed - added to finished stock'
         });
 
+         await rollupToAssembly(blankPart, totalQty);
+
+
         toast.success('✓ Production completed!', { 
           description: `${totalQty} units added to finished stock`
         });
