@@ -335,12 +335,17 @@ export default function Scan() {
       return;
     }
 
+    if (scannedPart.allow_sym_opp && wipForm.variant === 'RH' && !wipForm.rh_part_number) {
+      toast.error('Please enter RH Part Number');
+      return;
+    }
+
     setSaving(true);
     try {
       const operation = operations.find(o => o.id === wipForm.operation_id);
       const qty = parseInt(wipForm.quantity);
       
-      await base44.entities.WorkInProgress.create({
+      const wipData = {
         part_id: scannedPart.id,
         part_name: scannedPart.part_name,
         part_barcode: scannedPart.barcode,
@@ -353,7 +358,14 @@ export default function Scan() {
         worker_name: user?.full_name,
         notes: wipForm.notes,
         status: 'active'
-      });
+      };
+
+      if (scannedPart.allow_sym_opp && wipForm.variant === 'RH') {
+        wipData.rh_part_number = wipForm.rh_part_number;
+        wipData.rh_part_name = wipForm.rh_part_name || `${scannedPart.part_name} RH`;
+      }
+      
+      await base44.entities.WorkInProgress.create(wipData);
 
       // Create transaction record
       await base44.entities.StockTransaction.create({
@@ -376,7 +388,7 @@ export default function Scan() {
         description: scannedPart.allow_sym_opp ? `${wipForm.variant} variant` : undefined
       });
       setShowWipDialog(false);
-      setWipForm({ operation_id: '', quantity: '', notes: '', variant: '' });
+      setWipForm({ operation_id: '', quantity: '', notes: '', variant: '', rh_part_number: '', rh_part_name: '' });
       
       // Navigate to My WIP
       navigate(createPageUrl('MyWIP'));
