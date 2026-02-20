@@ -257,6 +257,9 @@ export default function MyWIP() {
           notes: `Completed RH → ${rhPartNumber}`
         });
 
+         await rollupToAssembly(rhPart, rhQty);
+
+
         successMsg += (successMsg ? ' and ' : '') + `${rhQty} RH on ${rhPartNumber}`;
       }
 
