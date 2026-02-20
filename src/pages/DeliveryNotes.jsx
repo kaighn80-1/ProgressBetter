@@ -200,22 +200,46 @@ export default function DeliveryNotes() {
       return;
     }
 
-    const partsToDeliver = Object.entries(selectedParts)
-      .filter(([_, qty]) => qty > 0)
-      .map(([partId, qty]) => {
-        const part = parts.find(p => p.id === partId);
-        return {
-          part_id: partId,
-          part_name: part.part_name,
-          part_number: part.part_number,
-          quantity: qty,
-          unit: part.unit || 'pcs',
-          notes: part.description || ''
-        };
-      });
+    let itemsToDeliver = [];
 
-    if (partsToDeliver.length === 0) {
-      toast.error('Please select at least one part with quantity');
+    if (deliveryMode === 'assembly') {
+      itemsToDeliver = Object.entries(selectedItems)
+        .filter(([_, qty]) => qty > 0)
+        .map(([assemblyId, qty]) => {
+          const assembly = assemblies.find(a => a.id === assemblyId);
+          const childParts = getChildParts(assemblyId);
+          return {
+            type: 'assembly',
+            assembly_id: assemblyId,
+            assembly_number: assembly.assembly_number,
+            assembly_name: assembly.assembly_name,
+            quantity: qty,
+            child_parts: childParts.map(p => ({
+              part_id: p.id,
+              part_name: p.part_name,
+              part_number: p.part_number
+            }))
+          };
+        });
+    } else {
+      itemsToDeliver = Object.entries(selectedItems)
+        .filter(([_, qty]) => qty > 0)
+        .map(([partId, qty]) => {
+          const part = parts.find(p => p.id === partId);
+          return {
+            type: 'part',
+            part_id: partId,
+            part_name: part.part_name,
+            part_number: part.part_number,
+            quantity: qty,
+            unit: part.unit || 'pcs',
+            notes: part.description || ''
+          };
+        });
+    }
+
+    if (itemsToDeliver.length === 0) {
+      toast.error(`Please select at least one ${deliveryMode === 'assembly' ? 'assembly' : 'part'} with quantity`);
       return;
     }
 
@@ -225,7 +249,6 @@ export default function DeliveryNotes() {
         toast.error('Please fill in address details');
         return;
       }
-      // Save new address
       try {
         const newAddr = await base44.entities.DeliveryAddress.create(customAddress);
         addressInfo = {
@@ -263,7 +286,7 @@ export default function DeliveryNotes() {
     setSaving(true);
     try {
       const project = projects.find(p => p.id === selectedProject);
-      const totalQty = partsToDeliver.reduce((sum, p) => sum + p.quantity, 0);
+      const totalQty = itemsToDeliver.reduce((sum, item) => sum + item.quantity, 0);
       
       const deliveryNote = await base44.entities.DeliveryNote.create({
         delivery_note_number: generateDeliveryNoteNumber(),
@@ -271,7 +294,7 @@ export default function DeliveryNotes() {
         project_name: project?.project_name,
         delivery_date: deliveryDate,
         ...addressInfo,
-        selected_parts: partsToDeliver,
+        selected_parts: itemsToDeliver,
         total_quantity: totalQty,
         notes: notes,
         generated_by_email: user?.email,
@@ -279,22 +302,43 @@ export default function DeliveryNotes() {
         status: 'generated'
       });
 
-      // Update stock and create transactions
-      for (const item of partsToDeliver) {
-        const part = parts.find(p => p.id === item.part_id);
-        await base44.entities.Part.update(item.part_id, {
-          finished_stock: Math.max(0, (part.finished_stock || 0) - item.quantity)
-        });
+      // Handle assembly deliveries
+      if (deliveryMode === 'assembly') {
+        for (const item of itemsToDeliver) {
+          const assembly = assemblies.find(a => a.id === item.assembly_id);
+          await base44.entities.Assembly.update(item.assembly_id, {
+            completed_quantity: Math.max(0, (assembly.completed_quantity || 0) - item.quantity),
+            assembly_stock: Math.max(0, (assembly.assembly_stock || 0) - item.quantity)
+          });
 
-        await base44.entities.StockTransaction.create({
-          part_id: item.part_id,
-          part_name: item.part_name,
-          transaction_type: 'delivered',
-          quantity_change: -item.quantity,
-          user_email: user?.email,
-          user_name: user?.full_name,
-          notes: `Delivery Note: ${deliveryNote.delivery_note_number}`
-        });
+          await base44.entities.StockTransaction.create({
+            part_id: item.assembly_id,
+            part_name: item.assembly_name,
+            transaction_type: 'delivered',
+            quantity_change: -item.quantity,
+            user_email: user?.email,
+            user_name: user?.full_name,
+            notes: `Delivery Note: ${deliveryNote.delivery_note_number} (Assembly)`
+          });
+        }
+      } else {
+        // Handle part deliveries
+        for (const item of itemsToDeliver) {
+          const part = parts.find(p => p.id === item.part_id);
+          await base44.entities.Part.update(item.part_id, {
+            finished_stock: Math.max(0, (part.finished_stock || 0) - item.quantity)
+          });
+
+          await base44.entities.StockTransaction.create({
+            part_id: item.part_id,
+            part_name: item.part_name,
+            transaction_type: 'delivered',
+            quantity_change: -item.quantity,
+            user_email: user?.email,
+            user_name: user?.full_name,
+            notes: `Delivery Note: ${deliveryNote.delivery_note_number}`
+          });
+        }
       }
 
       toast.success('Delivery note generated successfully!');
