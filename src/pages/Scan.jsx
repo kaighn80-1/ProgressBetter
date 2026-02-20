@@ -282,7 +282,23 @@ export default function Scan() {
         p.part_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.barcode?.toLowerCase().includes(searchQuery.toLowerCase())
       );
-      setSearchResults(filtered);
+      
+      // Sort by project_num → module_letter (ASC) → part_seq
+      const sorted = filtered.sort((a, b) => {
+        const projA = a.project_num ?? 0;
+        const projB = b.project_num ?? 0;
+        if (projA !== projB) return projA - projB;
+        
+        const modA = (a.module_letter || '').toLowerCase();
+        const modB = (b.module_letter || '').toLowerCase();
+        if (modA !== modB) return modA.localeCompare(modB);
+        
+        const seqA = a.part_seq ?? 0;
+        const seqB = b.part_seq ?? 0;
+        return seqA - seqB;
+      });
+      
+      setSearchResults(sorted);
     } catch (e) {
       console.error(e);
     } finally {
