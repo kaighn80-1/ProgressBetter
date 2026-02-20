@@ -48,45 +48,45 @@
  * The mainPage value must match a key in the PAGES object exactly.
  */
 import ChangePassword from './pages/ChangePassword';
-import Dashboard from './pages/Dashboard';
 import DeliveryNotes from './pages/DeliveryNotes';
 import Fixings from './pages/Fixings';
 import FullStockTake from './pages/FullStockTake';
-import FullStockTakeReport from './pages/FullStockTakeReport';
-import MyWIP from './pages/MyWIP';
 import Operations from './pages/Operations';
 import PartialStockTake from './pages/PartialStockTake';
-import Parts from './pages/Parts';
 import PinVerification from './pages/PinVerification';
 import ProjectDetail from './pages/ProjectDetail';
 import Projects from './pages/Projects';
 import Reports from './pages/Reports';
 import Requirements from './pages/Requirements';
-import Scan from './pages/Scan';
 import Sections from './pages/Sections';
 import SetupPin from './pages/SetupPin';
+import FullStockTakeReport from './pages/FullStockTakeReport';
+import Dashboard from './pages/Dashboard';
+import MyWIP from './pages/MyWIP';
+import Scan from './pages/Scan';
+import Parts from './pages/Parts';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "ChangePassword": ChangePassword,
-    "Dashboard": Dashboard,
     "DeliveryNotes": DeliveryNotes,
     "Fixings": Fixings,
     "FullStockTake": FullStockTake,
-    "FullStockTakeReport": FullStockTakeReport,
-    "MyWIP": MyWIP,
     "Operations": Operations,
     "PartialStockTake": PartialStockTake,
-    "Parts": Parts,
     "PinVerification": PinVerification,
     "ProjectDetail": ProjectDetail,
     "Projects": Projects,
     "Reports": Reports,
     "Requirements": Requirements,
-    "Scan": Scan,
     "Sections": Sections,
     "SetupPin": SetupPin,
+    "FullStockTakeReport": FullStockTakeReport,
+    "Dashboard": Dashboard,
+    "MyWIP": MyWIP,
+    "Scan": Scan,
+    "Parts": Parts,
 }
 
 export const pagesConfig = {
