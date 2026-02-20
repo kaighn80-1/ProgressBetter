@@ -703,8 +703,8 @@ export default function Scan() {
                     </div>
                   )}
                   <div>
-                    <CardTitle className="text-lg">{scannedPart.part_name}</CardTitle>
-                    <p className="text-sm text-slate-500">{scannedPart.part_number}</p>
+                    <CardTitle className="text-2xl font-bold">{scannedPart.part_number}</CardTitle>
+                    <p className="text-sm text-slate-600">{scannedPart.part_name}</p>
                     <p className="text-xs text-slate-400 font-mono mt-1">{scannedPart.barcode}</p>
                   </div>
                 </div>
