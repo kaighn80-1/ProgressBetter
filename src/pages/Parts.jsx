@@ -26,8 +26,10 @@ import {
   ChevronUp,
   ChevronDown,
   Settings,
-  Wrench
+  Wrench,
+  ArrowUpDown
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 const UNITS = ['pcs', 'kg', 'm', 'l', 'box', 'set'];
 
