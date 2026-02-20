@@ -283,15 +283,16 @@ export default function Scan() {
         p.barcode?.toLowerCase().includes(searchQuery.toLowerCase())
       );
       
-      // Sort by project_num → module_letter (ASC) → part_seq
+      // Force ascending: project_num → module_letter (A→Z) → part_seq
       const sorted = filtered.sort((a, b) => {
         const projA = a.project_num ?? 0;
         const projB = b.project_num ?? 0;
         if (projA !== projB) return projA - projB;
         
-        const modA = (a.module_letter || '').toLowerCase();
-        const modB = (b.module_letter || '').toLowerCase();
-        if (modA !== modB) return modA.localeCompare(modB);
+        const modA = (a.module_letter || '').toUpperCase();
+        const modB = (b.module_letter || '').toUpperCase();
+        if (modA < modB) return -1;
+        if (modA > modB) return 1;
         
         const seqA = a.part_seq ?? 0;
         const seqB = b.part_seq ?? 0;
