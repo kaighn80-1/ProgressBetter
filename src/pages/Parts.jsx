@@ -414,8 +414,8 @@ export default function Parts() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <h3 className="font-semibold text-slate-900">{part.part_name}</h3>
-                          <p className="text-sm text-slate-500">{part.part_number}</p>
+                          <h3 className="font-bold text-lg text-slate-900">{part.part_number}</h3>
+                          <p className="text-sm text-slate-600">{part.part_name}</p>
                           <p className="text-xs text-slate-400 font-mono mt-1">{part.barcode}</p>
                         </div>
                         <div className="flex gap-1">
