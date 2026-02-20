@@ -293,6 +293,35 @@ export default function Parts() {
         }
       }
 
+      // Auto-compute sorting fields from part_number
+      const partNum = form.part_number || '';
+      let projectNum = 0;
+      let moduleLetter = '';
+      let partSeq = 0;
+      
+      // Extract first 3 chars as project_num
+      if (partNum.length >= 3) {
+        const first3 = partNum.substring(0, 3);
+        const parsed = parseInt(first3, 10);
+        if (!isNaN(parsed)) {
+          projectNum = parsed;
+        }
+      }
+      
+      // Extract 4th char as module_letter
+      if (partNum.length >= 4) {
+        moduleLetter = partNum.charAt(3);
+      }
+      
+      // Extract last 5 chars as part_seq
+      if (partNum.length >= 5) {
+        const last5 = partNum.substring(partNum.length - 5);
+        const parsed = parseInt(last5, 10);
+        if (!isNaN(parsed)) {
+          partSeq = parsed;
+        }
+      }
+
       const partData = {
         ...form,
         min_stock_level: form.min_stock_level ? parseFloat(form.min_stock_level) : null,
@@ -303,7 +332,10 @@ export default function Parts() {
         section_name: section?.section_name || null,
         subsection_name: subsection?.subsection_name || null,
         rh_part_number: rhPartNumber,
-        rh_part_name: rhPartName
+        rh_part_name: rhPartName,
+        project_num: projectNum,
+        module_letter: moduleLetter,
+        part_seq: partSeq
       };
 
       if (editingPart) {
