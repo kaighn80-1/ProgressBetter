@@ -463,8 +463,8 @@ export default function Parts() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <h3 className="font-semibold text-slate-900">{part.part_name}</h3>
-                          <p className="text-sm text-slate-500">{part.part_number}</p>
+                          <h3 className="text-xl font-bold text-slate-900">{part.part_number}</h3>
+                          <p className="text-sm text-slate-600 font-medium mt-1">{part.part_name}</p>
                           <p className="text-xs text-slate-400 font-mono mt-1">{part.barcode}</p>
                         </div>
                         <div className="flex gap-1">
@@ -930,7 +930,19 @@ export default function Parts() {
                                 p.part_number?.toUpperCase().includes('RH') ||
                                 p.part_number?.toUpperCase().includes('RHD')
                               )
-                              .sort((a, b) => (a.part_name || '').localeCompare(b.part_name || ''))
+                              .sort((a, b) => {
+                                const projA = a.project_num ?? 0;
+                                const projB = b.project_num ?? 0;
+                                if (projA !== projB) return projA - projB;
+                                
+                                const modA = (a.module_letter || '').toLowerCase();
+                                const modB = (b.module_letter || '').toLowerCase();
+                                if (modA !== modB) return modA.localeCompare(modB);
+                                
+                                const seqA = a.part_seq ?? 0;
+                                const seqB = b.part_seq ?? 0;
+                                return seqA - seqB;
+                              })
                               .map(p => (
                                 <SelectItem key={p.id} value={p.id}>
                                   {p.part_number} - {p.part_name}
