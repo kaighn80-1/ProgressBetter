@@ -360,8 +360,9 @@ export default function DeliveryNotes() {
     setSelectedAddress('');
     setUseCustomAddress(false);
     setCustomAddress({ address_name: '', full_address: '', contact_name: '', contact_phone: '', contact_email: '' });
-    setSelectedParts({});
+    setSelectedItems({});
     setNotes('');
+    setDeliveryMode('assembly');
   };
 
   const handlePrint = () => {
