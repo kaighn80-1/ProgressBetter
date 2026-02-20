@@ -783,16 +783,13 @@ export default function MyWIP() {
               {(() => {
                 const part = getPartForWip(selectedWip);
                 if (part?.allow_sym_opp && selectedWip?.variant) {
-                  const variantPartId = selectedWip.variant === 'LH' ? part.lh_variant_part_id : part.rh_variant_part_id;
-                  const variantPart = parts.find(p => p.id === variantPartId);
-                  const displayNumber = selectedWip.variant === 'LH' 
-                    ? (part.lh_part_number_override || variantPart?.part_number)
-                    : (part.rh_part_number_override || variantPart?.part_number);
-                  const displayName = selectedWip.variant === 'LH'
-                    ? (part.lh_part_name_override || variantPart?.part_name)
-                    : (part.rh_part_name_override || variantPart?.part_name);
-                  
-                  return `Completing ${selectedWip.quantity} units as ${selectedWip.variant} variant → will add to ${displayNumber || displayName || 'variant part'} stock`;
+                  if (selectedWip.variant === 'LH') {
+                    return `Completing ${selectedWip.quantity} units as LH → will add to ${part.part_number} (${part.part_name}) stock`;
+                  } else if (selectedWip.variant === 'RH') {
+                    const rhNumber = selectedWip.rh_part_number || 'RH part';
+                    const rhName = selectedWip.rh_part_name || `${part.part_name} RH`;
+                    return `Completing ${selectedWip.quantity} units as RH → will add to ${rhNumber} (${rhName}) stock`;
+                  }
                 }
                 return `This will return ${selectedWip?.quantity} units to finished stock.`;
               })()}
