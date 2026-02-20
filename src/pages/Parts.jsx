@@ -101,19 +101,20 @@ export default function Parts() {
         base44.entities.Subsection.list('order_index')
       ]);
       
-      // Sort parts by project_num, module_letter, part_seq
+      // Sort parts by project_num, module_letter (A→Z), part_seq
       const sortedParts = partsData.sort((a, b) => {
-        // Primary sort: project_num
+        // Primary sort: project_num (ascending)
         const projA = a.project_num ?? 0;
         const projB = b.project_num ?? 0;
         if (projA !== projB) return projA - projB;
         
-        // Secondary sort: module_letter
-        const modA = (a.module_letter || '').toLowerCase();
-        const modB = (b.module_letter || '').toLowerCase();
-        if (modA !== modB) return modA.localeCompare(modB);
+        // Secondary sort: module_letter (A→Z ascending, explicitly)
+        const modA = (a.module_letter || '').toUpperCase();
+        const modB = (b.module_letter || '').toUpperCase();
+        if (modA < modB) return -1;
+        if (modA > modB) return 1;
         
-        // Tertiary sort: part_seq
+        // Tertiary sort: part_seq (ascending)
         const seqA = a.part_seq ?? 0;
         const seqB = b.part_seq ?? 0;
         return seqA - seqB;
