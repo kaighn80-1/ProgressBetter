@@ -472,6 +472,11 @@ export default function Parts() {
                       </div>
                       
                       <div className="flex items-center gap-2 mt-3 flex-wrap">
+                        {part.project_num !== undefined && (
+                          <Badge variant="outline" className="text-xs">
+                            P: {part.project_num} / M: {part.module_letter || '-'} / S: {part.part_seq}
+                          </Badge>
+                        )}
                         <Badge 
                           variant={isLowStock ? 'destructive' : 'secondary'}
                           className="flex items-center gap-1"
