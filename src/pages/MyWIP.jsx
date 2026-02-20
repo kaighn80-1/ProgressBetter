@@ -212,30 +212,34 @@ export default function MyWIP() {
 
         // Add to existing RH part
         const newRhStock = (rhPart.finished_stock || 0) + rhQty;
-            await base44.entities.Part.update(rhPart.id, {
-              finished_stock: newStock
-            });
+        await base44.entities.Part.update(rhPart.id, {
+          finished_stock: newRhStock
+        });
 
-            await base44.entities.StockTransaction.create({
-              part_id: rhPart.id,
-              part_name: rhPart.part_name,
-              transaction_type: 'completed_production',
-              quantity_change: selectedWip.quantity,
-              wip_id: selectedWip.id,
-              operation_name: selectedWip.operation_name,
-              user_email: user?.email,
-              user_name: user?.full_name,
-              notes: `Completed RH → ${rhPartNumber}`
-            });
+        await base44.entities.StockTransaction.create({
+          part_id: rhPart.id,
+          part_name: rhPart.part_name,
+          transaction_type: 'completed_production',
+          quantity_change: rhQty,
+          wip_id: selectedWip.id,
+          operation_name: selectedWip.operation_name,
+          user_email: user?.email,
+          user_name: user?.full_name,
+          notes: `Completed RH → ${rhPartNumber}`
+        });
 
-            toast.success('✓ Production completed!', { 
-              description: `${selectedWip.quantity} units added to ${rhPartNumber} (RH)`
-            });
-          }
-        }
+        successMsg += (successMsg ? ' and ' : '') + `${rhQty} RH on ${rhPartNumber}`;
+      }
+
+      if (successMsg) {
+        toast.success('✓ Production completed!', { 
+          description: successMsg,
+          duration: 5000
+        });
       } else {
-        // Standard completion - add to blank's finished stock
-        const newStock = (blankPart.finished_stock || 0) + selectedWip.quantity;
+        // Normal part (not sym-opp) - add to finished stock
+        const totalQty = selectedWip.quantity;
+        const newStock = (blankPart.finished_stock || 0) + totalQty;
         await base44.entities.Part.update(blankPart.id, {
           finished_stock: newStock
         });
@@ -244,7 +248,7 @@ export default function MyWIP() {
           part_id: blankPart.id,
           part_name: blankPart.part_name,
           transaction_type: 'completed_production',
-          quantity_change: selectedWip.quantity,
+          quantity_change: totalQty,
           wip_id: selectedWip.id,
           operation_name: selectedWip.operation_name,
           user_email: user?.email,
@@ -253,7 +257,7 @@ export default function MyWIP() {
         });
 
         toast.success('✓ Production completed!', { 
-          description: `${selectedWip.quantity} units added to finished stock`
+          description: `${totalQty} units added to finished stock`
         });
       }
 
