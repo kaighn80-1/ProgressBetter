@@ -709,41 +709,44 @@ export default function DeliveryNotes() {
                     <p style={{ color: '#64748B' }}>No completed assemblies available.</p>
                   ) : (
                     <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {getEligibleAssemblies().map((assembly) => (
-                        <div key={assembly.id} className="p-4 rounded-lg" style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
-                          <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <p className="font-bold" style={{ color: '#1E293B' }}>{assembly.assembly_number}</p>
-                              <p className="text-sm font-medium" style={{ color: '#64748B' }}>{assembly.assembly_name}</p>
+                      {getEligibleAssemblies().map((assembly) => {
+                        const availableQty = calculateAssemblyAvailableQty(assembly);
+                        return (
+                          <div key={assembly.id} className="p-4 rounded-lg" style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                            <div className="flex items-start justify-between mb-3">
+                              <div>
+                                <p className="font-bold" style={{ color: '#1E293B' }}>{assembly.assembly_number}</p>
+                                <p className="text-sm font-medium" style={{ color: '#64748B' }}>{assembly.assembly_name}</p>
+                              </div>
+                              <Badge style={{ backgroundColor: '#D1FAE5', color: '#065F46' }}>
+                                Available: {availableQty}
+                              </Badge>
                             </div>
-                            <Badge style={{ backgroundColor: '#D1FAE5', color: '#065F46' }}>
-                              Available: {assembly.completed_quantity || 0}
-                            </Badge>
-                          </div>
-                          
-                          {getChildParts(assembly.id).length > 0 && (
-                            <div className="mb-3 p-2 bg-white rounded" style={{ borderLeft: '3px solid #3B82F6' }}>
-                              <p className="text-xs font-semibold text-slate-600 mb-2">Components:</p>
-                              {getChildParts(assembly.id).map(part => (
-                                <p key={part.id} className="text-xs text-slate-600">• {part.part_number} - {part.part_name}</p>
-                              ))}
+                            
+                            {assembly.required_parts && assembly.required_parts.length > 0 && (
+                              <div className="mb-3 p-2 bg-white rounded" style={{ borderLeft: '3px solid #3B82F6' }}>
+                                <p className="text-xs font-semibold text-slate-600 mb-2">Required Parts:</p>
+                                {assembly.required_parts.map((req, idx) => (
+                                  <p key={idx} className="text-xs text-slate-600">• {req.part_number} - {req.part_name} (qty: {req.quantity_needed})</p>
+                                ))}
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center gap-2">
+                              <Label className="text-sm">Qty to deliver:</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                max={availableQty}
+                                value={selectedItems[assembly.id] || ''}
+                                onChange={(e) => handleQuantityChange(assembly.id, e.target.value)}
+                                placeholder="0"
+                                className="h-10 w-24"
+                              />
                             </div>
-                          )}
-                          
-                          <div className="flex items-center gap-2">
-                            <Label className="text-sm">Qty to deliver:</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              max={assembly.completed_quantity || 0}
-                              value={selectedItems[assembly.id] || ''}
-                              onChange={(e) => handleQuantityChange(assembly.id, e.target.value)}
-                              placeholder="0"
-                              className="h-10 w-24"
-                            />
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </>
