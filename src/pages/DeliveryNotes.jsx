@@ -159,10 +159,9 @@ export default function DeliveryNotes() {
   const filteredNotes = getFilteredNotes();
 
   const getEligibleAssemblies = () => {
-    if (!selectedProject) return [];
     return assemblies.filter(a => 
       (a.completed_quantity || 0) > 0
-    );
+    ).sort((a, b) => (b.completed_quantity || 0) - (a.completed_quantity || 0));
   };
 
   const getEligibleParts = () => {
