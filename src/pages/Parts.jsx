@@ -93,19 +93,13 @@ export default function Parts() {
   const loadParts = async () => {
     try {
       const [partsData, opsData, fixingsData, projectsData, sectionsData, subsectionsData] = await Promise.all([
-        base44.entities.Part.list(),
+        base44.entities.Part.list('part_name'),
         base44.entities.Operation.list('sequence_number'),
         base44.entities.Fixing.list('fixing_name'),
         base44.entities.Project.list('project_name'),
         base44.entities.Section.list('order_index'),
         base44.entities.Subsection.list('order_index')
       ]);
-      // Sort parts by project_num, module_letter, part_seq
-      partsData.sort((a, b) => {
-        if (a.project_num !== b.project_num) return (a.project_num || 0) - (b.project_num || 0);
-        if ((a.module_letter || '') !== (b.module_letter || '')) return (a.module_letter || '').localeCompare(b.module_letter || '');
-        return (a.part_seq || 0) - (b.part_seq || 0);
-      });
       setParts(partsData);
       setOperations(opsData);
       setFixings(fixingsData);
@@ -288,12 +282,17 @@ export default function Parts() {
       const section = sections.find(s => s.id === form.section_id);
       const subsection = subsections.find(ss => ss.id === form.subsection_id);
       
-      // Compute part number components
-      const partNum = form.part_number || '';
-      const project_num = partNum.length >= 3 ? parseInt(partNum.substring(0, 3)) || 0 : 0;
-      const module_letter = partNum.length >= 4 ? partNum.charAt(3) : '';
-      const part_seq = partNum.length >= 5 ? parseInt(partNum.substring(4)) || 0 : 0;
-      
+      // If RH part is selected, cache its details
+      let rhPartNumber = form.rh_part_number;
+      let rhPartName = form.rh_part_name;
+      if (form.allow_sym_opp && form.rh_part_id) {
+        const rhPart = parts.find(p => p.id === form.rh_part_id);
+        if (rhPart) {
+          rhPartNumber = rhPart.part_number;
+          rhPartName = rhPart.part_name;
+        }
+      }
+
       const partData = {
         ...form,
         min_stock_level: form.min_stock_level ? parseFloat(form.min_stock_level) : null,
@@ -303,9 +302,8 @@ export default function Parts() {
         project_name: project?.project_name || null,
         section_name: section?.section_name || null,
         subsection_name: subsection?.subsection_name || null,
-        project_num,
-        module_letter,
-        part_seq
+        rh_part_number: rhPartNumber,
+        rh_part_name: rhPartName
       };
 
       if (editingPart) {
@@ -414,8 +412,8 @@ export default function Parts() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <h3 className="font-bold text-lg text-slate-900">{part.part_number}</h3>
-                          <p className="text-sm text-slate-600">{part.part_name}</p>
+                          <h3 className="font-semibold text-slate-900">{part.part_name}</h3>
+                          <p className="text-sm text-slate-500">{part.part_number}</p>
                           <p className="text-xs text-slate-400 font-mono mt-1">{part.barcode}</p>
                         </div>
                         <div className="flex gap-1">
@@ -876,9 +874,10 @@ export default function Parts() {
                                 p.part_number?.toUpperCase().includes('RH') ||
                                 p.part_number?.toUpperCase().includes('RHD')
                               )
+                              .sort((a, b) => (a.part_name || '').localeCompare(b.part_name || ''))
                               .map(p => (
                                 <SelectItem key={p.id} value={p.id}>
-                                  <span className="font-bold">{p.part_number}</span> - {p.part_name}
+                                  {p.part_number} - {p.part_name}
                                   {p.is_rh_variant && <span className="ml-2 text-xs text-green-600">[RH]</span>}
                                 </SelectItem>
                               ))}

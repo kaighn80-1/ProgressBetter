@@ -58,12 +58,6 @@ export default function Dashboard() {
         base44.entities.Fixing.list(),
         base44.entities.WorkInProgress.filter({ status: 'active' })
       ]);
-      // Sort parts by project_num, module_letter, part_seq
-      partsData.sort((a, b) => {
-        if (a.project_num !== b.project_num) return (a.project_num || 0) - (b.project_num || 0);
-        if ((a.module_letter || '') !== (b.module_letter || '')) return (a.module_letter || '').localeCompare(b.module_letter || '');
-        return (a.part_seq || 0) - (b.part_seq || 0);
-      });
       setUser(userData);
       setParts(partsData);
       setFixings(fixingsData);

@@ -282,12 +282,6 @@ export default function Scan() {
         p.part_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.barcode?.toLowerCase().includes(searchQuery.toLowerCase())
       );
-      // Sort by project_num, module_letter, part_seq
-      filtered.sort((a, b) => {
-        if (a.project_num !== b.project_num) return (a.project_num || 0) - (b.project_num || 0);
-        if ((a.module_letter || '') !== (b.module_letter || '')) return (a.module_letter || '').localeCompare(b.module_letter || '');
-        return (a.part_seq || 0) - (b.part_seq || 0);
-      });
       setSearchResults(filtered);
     } catch (e) {
       console.error(e);
@@ -665,8 +659,8 @@ export default function Scan() {
                   <div className="flex items-center gap-3">
                     <Package className="w-5 h-5 text-slate-400" />
                     <div>
-                      <p className="font-bold text-sm">{part.part_number}</p>
-                      <p className="text-xs text-slate-600">{part.part_name}</p>
+                      <p className="font-medium text-sm">{part.part_name}</p>
+                      <p className="text-xs text-slate-500">{part.part_number}</p>
                     </div>
                   </div>
                   <Badge variant="secondary">{part.finished_stock || 0} {part.unit || 'pcs'}</Badge>
@@ -703,8 +697,8 @@ export default function Scan() {
                     </div>
                   )}
                   <div>
-                    <CardTitle className="text-2xl font-bold">{scannedPart.part_number}</CardTitle>
-                    <p className="text-sm text-slate-600">{scannedPart.part_name}</p>
+                    <CardTitle className="text-lg">{scannedPart.part_name}</CardTitle>
+                    <p className="text-sm text-slate-500">{scannedPart.part_number}</p>
                     <p className="text-xs text-slate-400 font-mono mt-1">{scannedPart.barcode}</p>
                   </div>
                 </div>
