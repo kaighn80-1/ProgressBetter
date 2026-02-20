@@ -65,6 +65,7 @@ import Scan from './pages/Scan';
 import Sections from './pages/Sections';
 import SetupPin from './pages/SetupPin';
 import Assemblies from './pages/Assemblies';
+import DeliveryNotes from './pages/DeliveryNotes';
 import __Layout from './Layout.jsx';
 
 
@@ -87,6 +88,7 @@ export const PAGES = {
     "Sections": Sections,
     "SetupPin": SetupPin,
     "Assemblies": Assemblies,
+    "DeliveryNotes": DeliveryNotes,
 }
 
 export const pagesConfig = {
