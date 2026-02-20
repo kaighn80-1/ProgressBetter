@@ -184,6 +184,12 @@ export default function Parts() {
       location: part.location || '',
       required_fixings: part.required_fixings || [],
       allow_sym_opp: part.allow_sym_opp || false,
+      lh_variant_part_id: part.lh_variant_part_id || '',
+      rh_variant_part_id: part.rh_variant_part_id || '',
+      lh_part_number_override: part.lh_part_number_override || '',
+      lh_part_name_override: part.lh_part_name_override || '',
+      rh_part_number_override: part.rh_part_number_override || '',
+      rh_part_name_override: part.rh_part_name_override || '',
       lh_notes: part.lh_notes || '',
       rh_notes: part.rh_notes || ''
     });
