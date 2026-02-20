@@ -162,92 +162,56 @@ export default function MyWIP() {
       }
 
       const blankPart = parts[0];
-      let targetPartId = blankPart.id;
-      let targetPartName = blankPart.part_name;
-      let targetPartNumber = blankPart.part_number;
+      const lhQty = selectedWip.lh_quantity || 0;
+      const rhQty = selectedWip.rh_quantity || 0;
+
+      let successMsg = '';
       
-      // Handle symmetric opposites
-      if (blankPart.allow_sym_opp && selectedWip.variant) {
-        if (selectedWip.variant === 'LH') {
-          // LH: Add to original blank part's finished stock
-          const newStock = (blankPart.finished_stock || 0) + selectedWip.quantity;
-          await base44.entities.Part.update(blankPart.id, {
-            finished_stock: newStock
+      // Handle LH quantity
+      if (lhQty > 0) {
+        const newLhStock = (blankPart.finished_stock || 0) + lhQty;
+        await base44.entities.Part.update(blankPart.id, {
+          finished_stock: newLhStock
+        });
+
+        await base44.entities.StockTransaction.create({
+          part_id: blankPart.id,
+          part_name: blankPart.part_name,
+          transaction_type: 'completed_production',
+          quantity_change: lhQty,
+          wip_id: selectedWip.id,
+          operation_name: selectedWip.operation_name,
+          user_email: user?.email,
+          user_name: user?.full_name,
+          notes: `Completed LH → ${blankPart.part_number}`
+        });
+
+        successMsg = `${lhQty} LH on ${blankPart.part_number}`;
+      }
+
+      // Handle RH quantity
+      if (rhQty > 0) {
+        const rhPartNumber = selectedWip.rh_part_number;
+        if (!rhPartNumber) {
+          toast.error('RH Part Number missing on WIP batch');
+          setSaving(false);
+          return;
+        }
+
+        // Look for existing part with this part number
+        const allParts = await base44.entities.Part.list();
+        const rhPart = allParts.find(p => p.part_number === rhPartNumber);
+
+        if (!rhPart) {
+          toast.error(`RH part ${rhPartNumber} not found — contact manager`, {
+            duration: 6000
           });
+          setSaving(false);
+          return;
+        }
 
-          await base44.entities.StockTransaction.create({
-            part_id: blankPart.id,
-            part_name: blankPart.part_name,
-            transaction_type: 'completed_production',
-            quantity_change: selectedWip.quantity,
-            wip_id: selectedWip.id,
-            operation_name: selectedWip.operation_name,
-            user_email: user?.email,
-            user_name: user?.full_name,
-            notes: `Completed LH → ${blankPart.part_number}`
-          });
-
-          toast.success('✓ Production completed!', { 
-            description: `${selectedWip.quantity} units added to ${blankPart.part_number} (LH)`
-          });
-        } else if (selectedWip.variant === 'RH') {
-          // RH: Find or create RH part
-          const rhPartNumber = selectedWip.rh_part_number;
-          if (!rhPartNumber) {
-            toast.error('RH Part Number missing');
-            setSaving(false);
-            return;
-          }
-
-          // Look for existing part with this part number
-          const allParts = await base44.entities.Part.list();
-          let rhPart = allParts.find(p => p.part_number === rhPartNumber);
-
-          if (!rhPart) {
-            // Auto-create new RH part
-            const rhPartName = selectedWip.rh_part_name || `${blankPart.part_name} RH`;
-            rhPart = await base44.entities.Part.create({
-              part_name: rhPartName,
-              part_number: rhPartNumber,
-              barcode: `${blankPart.barcode}-RH`,
-              description: blankPart.description,
-              unit: blankPart.unit,
-              min_stock_level: blankPart.min_stock_level,
-              reorder_quantity: blankPart.reorder_quantity,
-              image_url: blankPart.image_url,
-              category: blankPart.category,
-              project_id: blankPart.project_id,
-              project_name: blankPart.project_name,
-              section_id: blankPart.section_id,
-              section_name: blankPart.section_name,
-              subsection_id: blankPart.subsection_id,
-              subsection_name: blankPart.subsection_name,
-              tooling_required: blankPart.tooling_required,
-              tooling_location: blankPart.tooling_location,
-              finish_type: blankPart.finish_type,
-              location: blankPart.location,
-              allow_sym_opp: false,
-              finished_stock: selectedWip.quantity
-            });
-
-            await base44.entities.StockTransaction.create({
-              part_id: rhPart.id,
-              part_name: rhPart.part_name,
-              transaction_type: 'completed_production',
-              quantity_change: selectedWip.quantity,
-              wip_id: selectedWip.id,
-              operation_name: selectedWip.operation_name,
-              user_email: user?.email,
-              user_name: user?.full_name,
-              notes: `Completed RH → ${rhPartNumber} (new part created)`
-            });
-
-            toast.success('✓ Production completed!', { 
-              description: `${selectedWip.quantity} units added to ${rhPartNumber} (RH, new part created)`
-            });
-          } else {
-            // Add to existing RH part
-            const newStock = (rhPart.finished_stock || 0) + selectedWip.quantity;
+        // Add to existing RH part
+        const newRhStock = (rhPart.finished_stock || 0) + rhQty;
             await base44.entities.Part.update(rhPart.id, {
               finished_stock: newStock
             });
