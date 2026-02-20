@@ -297,7 +297,8 @@ export default function PartialStockTake() {
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-slate-900">{item.name}</h3>
+                        <h3 className="text-lg font-bold text-slate-900">{item.number}</h3>
+                        <p className="text-sm text-slate-600 font-medium">{item.name}</p>
                         <p className="text-sm text-slate-500">{item.number}</p>
                         
                         {item.project_name && (
