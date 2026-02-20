@@ -47,6 +47,7 @@ export default function DeliveryNotes() {
   const [projects, setProjects] = useState([]);
   const [addresses, setAddresses] = useState([]);
   const [parts, setParts] = useState([]);
+  const [assemblies, setAssemblies] = useState([]);
   const [selectedProject, setSelectedProject] = useState('');
   const [deliveryDate, setDeliveryDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedAddress, setSelectedAddress] = useState('');
@@ -58,9 +59,10 @@ export default function DeliveryNotes() {
     contact_phone: '',
     contact_email: ''
   });
-  const [selectedParts, setSelectedParts] = useState({});
+  const [selectedItems, setSelectedItems] = useState({});
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [deliveryMode, setDeliveryMode] = useState('assembly');
   
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
