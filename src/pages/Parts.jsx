@@ -134,7 +134,7 @@ export default function Parts() {
     }
   };
 
-  // Sort: project_num ASC → module_letter DESC (L before A) → part_seq ASC
+  // Sort by part_number DESCENDING (string sort)
   const filteredParts = parts
     .filter(p =>
       p.part_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -142,21 +142,10 @@ export default function Parts() {
       p.barcode?.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => {
-      // 1. Project num ascending (157 before 158)
-      const projA = a.project_num ?? 0;
-      const projB = b.project_num ?? 0;
-      if (projA !== projB) return projA - projB;
-      
-      // 2. Module letter DESCENDING (L before A)
-      const modA = (a.module_letter || '').toUpperCase();
-      const modB = (b.module_letter || '').toUpperCase();
-      if (modA > modB) return -1;  // L comes before A
-      if (modA < modB) return 1;
-      
-      // 3. Part seq ascending
-      const seqA = a.part_seq ?? 0;
-      const seqB = b.part_seq ?? 0;
-      return seqA - seqB;
+      const partNumA = (a.part_number || '').toString();
+      const partNumB = (b.part_number || '').toString();
+      // Descending: higher values (L) before lower values (A)
+      return partNumB.localeCompare(partNumA);
     });
 
   const openAddDialog = () => {
