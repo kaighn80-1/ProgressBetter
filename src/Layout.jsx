@@ -182,6 +182,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Progress', page: 'MyWIP', icon: ClipboardList },
     { name: 'Priorities', page: 'Requirements', icon: Target },
     { name: 'Projects', page: 'Projects', icon: FolderOpen },
+    { name: 'Assemblies', page: 'Assemblies', icon: Package },
     { name: 'Parts Management', page: 'Parts', icon: Package },
     { name: 'Fixings', page: 'Fixings', icon: Wrench },
     { name: 'Operations', page: 'Operations', icon: Settings },
