@@ -491,7 +491,11 @@ export default function MyWIP() {
                         {isPaused ? <Pause className="w-7 h-7 text-amber-600" /> : <Package className="w-7 h-7 text-blue-600" />}
                       </div>
                       <div>
-                        <h3 className="font-semibold text-slate-900">{wip.part_name}</h3>
+                        <h3 className="text-xl font-bold text-slate-900">{(() => {
+                          const part = getPartForWip(wip);
+                          return part?.part_number || 'Unknown';
+                        })()}</h3>
+                        <p className="text-sm text-slate-600 font-medium">{wip.part_name}</p>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
                           <Badge variant="secondary" className={isPaused ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}>
                             {isPaused ? 'Paused' : wip.operation_name}
@@ -538,7 +542,13 @@ export default function MyWIP() {
       <Dialog open={!!selectedWip && !showMoveDialog && !showCompleteDialog && !showScrapDialog && !showPauseDialog} onOpenChange={() => setSelectedWip(null)}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{selectedWip?.part_name}</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">
+              {(() => {
+                const part = getPartForWip(selectedWip);
+                return part?.part_number || 'Unknown';
+              })()}
+            </DialogTitle>
+            <p className="text-sm text-slate-600 font-medium">{selectedWip?.part_name}</p>
             <DialogDescription>
               Batch started {selectedWip && format(new Date(selectedWip.started_date), 'MMM d, yyyy h:mm a')}
             </DialogDescription>
