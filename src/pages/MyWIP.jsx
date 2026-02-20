@@ -717,10 +717,40 @@ export default function MyWIP() {
           <DialogHeader>
             <DialogTitle>Complete Batch</DialogTitle>
             <DialogDescription>
-              This will return {selectedWip?.quantity} units to finished stock.
+              {(() => {
+                const part = getPartForWip(selectedWip);
+                if (part?.allow_sym_opp && selectedWip?.variant) {
+                  const variantPartId = selectedWip.variant === 'LH' ? part.lh_variant_part_id : part.rh_variant_part_id;
+                  const variantPart = parts.find(p => p.id === variantPartId);
+                  const displayNumber = selectedWip.variant === 'LH' 
+                    ? (part.lh_part_number_override || variantPart?.part_number)
+                    : (part.rh_part_number_override || variantPart?.part_number);
+                  const displayName = selectedWip.variant === 'LH'
+                    ? (part.lh_part_name_override || variantPart?.part_name)
+                    : (part.rh_part_name_override || variantPart?.part_name);
+                  
+                  return `Completing ${selectedWip.quantity} units as ${selectedWip.variant} variant → will add to ${displayNumber || displayName || 'variant part'} stock`;
+                }
+                return `This will return ${selectedWip?.quantity} units to finished stock.`;
+              })()}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {(() => {
+              const part = getPartForWip(selectedWip);
+              if (part?.allow_sym_opp && selectedWip?.variant) {
+                const variantNotes = selectedWip.variant === 'LH' ? part.lh_notes : part.rh_notes;
+                if (variantNotes) {
+                  return (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-xs font-medium text-blue-700 mb-1">{selectedWip.variant} Variant Notes:</p>
+                      <p className="text-sm text-blue-900">{variantNotes}</p>
+                    </div>
+                  );
+                }
+              }
+              return null;
+            })()}
             <div>
               <Label>Notes (optional)</Label>
               <Textarea
