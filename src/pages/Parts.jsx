@@ -434,15 +434,39 @@ export default function Parts() {
         </Button>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-        <Input
-          placeholder="Search parts..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 h-12"
-        />
+      {/* Search and Reverse Toggle */}
+      <div className="space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <Input
+            placeholder="Search parts..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-12"
+          />
+        </div>
+
+        {/* Reverse Order Toggle */}
+        <div className="flex items-center justify-between bg-white rounded-lg border border-slate-200 p-3">
+          <div className="flex items-center gap-3">
+            <ArrowUpDown className="w-5 h-5 text-slate-600" />
+            <Label className="text-sm font-medium text-slate-700 cursor-pointer">
+              Reverse List Order
+            </Label>
+            {reverseOrder && (
+              <Badge style={{ backgroundColor: '#3B82F6', color: 'white' }} className="text-xs">
+                Reversed
+              </Badge>
+            )}
+          </div>
+          <Switch
+            checked={reverseOrder}
+            onCheckedChange={(checked) => {
+              setReverseOrder(checked);
+              localStorage.setItem('parts-reverse-order', JSON.stringify(checked));
+            }}
+          />
+        </div>
       </div>
 
       {/* Parts List */}
