@@ -60,7 +60,7 @@ export default function Scan() {
   const [showWipDialog, setShowWipDialog] = useState(false);
   const [showAddStockDialog, setShowAddStockDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-  const [wipForm, setWipForm] = useState({ operation_id: '', quantity: '', notes: '', variant: '' });
+  const [wipForm, setWipForm] = useState({ operation_id: '', quantity: '', notes: '', variant: '', rh_part_number: '', rh_part_name: '' });
   const [addStockForm, setAddStockForm] = useState({ quantity: '', notes: '', variant: '' });
   const [saving, setSaving] = useState(false);
 
