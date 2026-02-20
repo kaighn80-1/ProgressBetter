@@ -800,6 +800,24 @@ export default function Parts() {
                 </Button>
               </div>
 
+              <div className="col-span-2 pt-4 border-t">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="is_rh_variant"
+                    checked={form.is_rh_variant}
+                    onChange={(e) => setForm({ ...form, is_rh_variant: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-300"
+                  />
+                  <Label htmlFor="is_rh_variant" className="cursor-pointer font-medium">
+                    This is a Right Hand (RH) Variant
+                  </Label>
+                </div>
+                <p className="text-xs text-slate-500 mt-1 ml-6">
+                  Check this if this part is specifically a Right Hand variant (for use in sym-opp blanks)
+                </p>
+              </div>
+
               {(user?.role === 'admin' || user?.role === 'supervisor') && (
                 <>
                   <div className="col-span-2 pt-4 border-t">
@@ -830,30 +848,46 @@ export default function Parts() {
                       </div>
 
                       <div className="col-span-2">
-                        <Label className="text-green-700 font-semibold">RH Variant (Right Hand) - Optional</Label>
-                        <p className="text-xs text-slate-500 mb-2">Enter RH part number/name for this blank part (required if RH ever processed)</p>
-                      </div>
-
-                      <div>
-                        <Label>RH Part Number</Label>
-                        <Input
-                          value={form.rh_part_number}
-                          onChange={(e) => setForm({ ...form, rh_part_number: e.target.value })}
-                          placeholder="e.g., ABC-123-RH"
-                          className="mt-1"
-                          style={{ borderColor: '#10B981', borderWidth: '2px' }}
-                        />
-                      </div>
-
-                      <div>
-                        <Label>RH Part Name</Label>
-                        <Input
-                          value={form.rh_part_name}
-                          onChange={(e) => setForm({ ...form, rh_part_name: e.target.value })}
-                          placeholder={`${form.part_name || 'Part Name'} RH`}
-                          className="mt-1"
-                          style={{ borderColor: '#10B981', borderWidth: '2px' }}
-                        />
+                        <Label className="text-green-700 font-semibold">RH Variant (Right Hand)</Label>
+                        <p className="text-xs text-slate-500 mb-2">Select which RH part to use when processing this blank as RH</p>
+                        <Select 
+                          value={form.rh_part_id} 
+                          onValueChange={(v) => {
+                            const selectedPart = parts.find(p => p.id === v);
+                            setForm({ 
+                              ...form, 
+                              rh_part_id: v,
+                              rh_part_number: selectedPart?.part_number || '',
+                              rh_part_name: selectedPart?.part_name || ''
+                            });
+                          }}
+                        >
+                          <SelectTrigger className="mt-1" style={{ borderColor: '#10B981', borderWidth: '2px' }}>
+                            <SelectValue placeholder="Select RH part..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {parts
+                              .filter(p => 
+                                p.is_rh_variant || 
+                                p.part_name?.toUpperCase().includes('RH') || 
+                                p.part_name?.toUpperCase().includes('RHD') ||
+                                p.part_number?.toUpperCase().includes('RH') ||
+                                p.part_number?.toUpperCase().includes('RHD')
+                              )
+                              .sort((a, b) => (a.part_name || '').localeCompare(b.part_name || ''))
+                              .map(p => (
+                                <SelectItem key={p.id} value={p.id}>
+                                  {p.part_number} - {p.part_name}
+                                  {p.is_rh_variant && <span className="ml-2 text-xs text-green-600">[RH]</span>}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        {form.rh_part_id && (
+                          <p className="text-xs text-green-700 mt-2">
+                            Selected: <span className="font-bold">{form.rh_part_number} - {form.rh_part_name}</span>
+                          </p>
+                        )}
                       </div>
                     </>
                   )}
