@@ -93,13 +93,19 @@ export default function Parts() {
   const loadParts = async () => {
     try {
       const [partsData, opsData, fixingsData, projectsData, sectionsData, subsectionsData] = await Promise.all([
-        base44.entities.Part.list('part_name'),
+        base44.entities.Part.list(),
         base44.entities.Operation.list('sequence_number'),
         base44.entities.Fixing.list('fixing_name'),
         base44.entities.Project.list('project_name'),
         base44.entities.Section.list('order_index'),
         base44.entities.Subsection.list('order_index')
       ]);
+      // Sort parts by project_num, module_letter, part_seq
+      partsData.sort((a, b) => {
+        if (a.project_num !== b.project_num) return (a.project_num || 0) - (b.project_num || 0);
+        if ((a.module_letter || '') !== (b.module_letter || '')) return (a.module_letter || '').localeCompare(b.module_letter || '');
+        return (a.part_seq || 0) - (b.part_seq || 0);
+      });
       setParts(partsData);
       setOperations(opsData);
       setFixings(fixingsData);
