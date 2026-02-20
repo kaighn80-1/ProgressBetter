@@ -141,7 +141,7 @@ export default function Parts() {
   };
 
   // Sort by part_number DESCENDING (string sort)
-  const filteredParts = parts
+  let filteredParts = parts
     .filter(p =>
       p.part_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.part_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -153,6 +153,11 @@ export default function Parts() {
       // Descending: higher values (L) before lower values (A)
       return partNumB.localeCompare(partNumA);
     });
+
+  // Apply visual reversal if toggle is ON
+  if (reverseOrder) {
+    filteredParts = [...filteredParts].reverse();
+  }
 
   const openAddDialog = () => {
     setEditingPart(null);
