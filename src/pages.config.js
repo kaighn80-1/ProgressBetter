@@ -49,7 +49,6 @@
  */
 import ChangePassword from './pages/ChangePassword';
 import Dashboard from './pages/Dashboard';
-import DeliveryNotes from './pages/DeliveryNotes';
 import Fixings from './pages/Fixings';
 import FullStockTake from './pages/FullStockTake';
 import FullStockTakeReport from './pages/FullStockTakeReport';
@@ -72,7 +71,6 @@ import __Layout from './Layout.jsx';
 export const PAGES = {
     "ChangePassword": ChangePassword,
     "Dashboard": Dashboard,
-    "DeliveryNotes": DeliveryNotes,
     "Fixings": Fixings,
     "FullStockTake": FullStockTake,
     "FullStockTakeReport": FullStockTakeReport,
