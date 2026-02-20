@@ -950,37 +950,66 @@ export default function Scan() {
             {scannedPart?.allow_sym_opp && (
               <div>
                 <Label className="text-base font-semibold">Process As *</Label>
-                <p className="text-xs text-slate-500 mb-3">Select variant for this batch</p>
+                <p className="text-xs text-slate-500 mb-3">Select which variant you're producing from this blank</p>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setWipForm({ ...wipForm, variant: 'LH' })}
-                    className={`h-20 rounded-xl border-2 font-semibold transition-all ${
+                    className={`h-24 rounded-xl border-2 font-semibold transition-all ${
                       wipForm.variant === 'LH'
                         ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
                         : 'bg-white border-slate-200 text-slate-700 hover:border-blue-400'
                     }`}
                   >
                     <div className="text-lg">Left Hand</div>
-                    <div className="text-sm opacity-80">(LH)</div>
+                    <div className="text-sm opacity-80 mt-1">(LH)</div>
+                    {scannedPart.lh_variant_part_id && (() => {
+                      const lhPart = parts.find(p => p.id === scannedPart.lh_variant_part_id);
+                      const displayNum = scannedPart.lh_part_number_override || lhPart?.part_number;
+                      return displayNum ? <div className="text-xs mt-1 opacity-75">→ {displayNum}</div> : null;
+                    })()}
                   </button>
                   <button
                     type="button"
                     onClick={() => setWipForm({ ...wipForm, variant: 'RH' })}
-                    className={`h-20 rounded-xl border-2 font-semibold transition-all ${
+                    className={`h-24 rounded-xl border-2 font-semibold transition-all ${
                       wipForm.variant === 'RH'
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
-                        : 'bg-white border-slate-200 text-slate-700 hover:border-blue-400'
+                        ? 'bg-green-600 border-green-600 text-white shadow-lg'
+                        : 'bg-white border-slate-200 text-slate-700 hover:border-green-400'
                     }`}
                   >
                     <div className="text-lg">Right Hand</div>
-                    <div className="text-sm opacity-80">(RH)</div>
+                    <div className="text-sm opacity-80 mt-1">(RH)</div>
+                    {scannedPart.rh_variant_part_id && (() => {
+                      const rhPart = parts.find(p => p.id === scannedPart.rh_variant_part_id);
+                      const displayNum = scannedPart.rh_part_number_override || rhPart?.part_number;
+                      return displayNum ? <div className="text-xs mt-1 opacity-75">→ {displayNum}</div> : null;
+                    })()}
                   </button>
                 </div>
                 {wipForm.variant && scannedPart[wipForm.variant === 'LH' ? 'lh_notes' : 'rh_notes'] && (
                   <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <p className="text-xs font-medium text-blue-700 mb-1">{wipForm.variant} Processing Notes:</p>
                     <p className="text-sm text-blue-900">{scannedPart[wipForm.variant === 'LH' ? 'lh_notes' : 'rh_notes']}</p>
+                  </div>
+                )}
+                {wipForm.variant && (
+                  <div className="mt-2 p-3 bg-slate-50 rounded-lg">
+                    <p className="text-xs text-slate-600">
+                      Completed units will be added to: <span className="font-semibold">{
+                        (() => {
+                          const variantPartId = wipForm.variant === 'LH' ? scannedPart.lh_variant_part_id : scannedPart.rh_variant_part_id;
+                          const variantPart = parts.find(p => p.id === variantPartId);
+                          const displayNum = wipForm.variant === 'LH' 
+                            ? (scannedPart.lh_part_number_override || variantPart?.part_number)
+                            : (scannedPart.rh_part_number_override || variantPart?.part_number);
+                          const displayName = wipForm.variant === 'LH'
+                            ? (scannedPart.lh_part_name_override || variantPart?.part_name)
+                            : (scannedPart.rh_part_name_override || variantPart?.part_name);
+                          return `${displayNum || ''} ${displayName || 'Variant Part'}`;
+                        })()
+                      }</span>
+                    </p>
                   </div>
                 )}
               </div>
