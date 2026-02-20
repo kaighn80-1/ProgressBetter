@@ -157,8 +157,7 @@ export default function Parts() {
       const seqB = b.part_seq ?? 0;
       return seqA - seqB;
     })
-    .slice()
-    .reverse(reverseOrder ? [] : [0]);
+    .slice(reverseOrder ? [0].reverse() : []);
 
   const openAddDialog = () => {
     setEditingPart(null);
