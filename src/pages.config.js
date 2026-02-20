@@ -47,6 +47,7 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import ChangePassword from './pages/ChangePassword';
 import Dashboard from './pages/Dashboard';
 import DeliveryNotes from './pages/DeliveryNotes';
 import Fixings from './pages/Fixings';
@@ -56,19 +57,19 @@ import MyWIP from './pages/MyWIP';
 import Operations from './pages/Operations';
 import PartialStockTake from './pages/PartialStockTake';
 import Parts from './pages/Parts';
+import PinVerification from './pages/PinVerification';
 import ProjectDetail from './pages/ProjectDetail';
 import Projects from './pages/Projects';
 import Reports from './pages/Reports';
 import Requirements from './pages/Requirements';
 import Scan from './pages/Scan';
 import Sections from './pages/Sections';
-import PinVerification from './pages/PinVerification';
 import SetupPin from './pages/SetupPin';
-import ChangePassword from './pages/ChangePassword';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "ChangePassword": ChangePassword,
     "Dashboard": Dashboard,
     "DeliveryNotes": DeliveryNotes,
     "Fixings": Fixings,
@@ -78,15 +79,14 @@ export const PAGES = {
     "Operations": Operations,
     "PartialStockTake": PartialStockTake,
     "Parts": Parts,
+    "PinVerification": PinVerification,
     "ProjectDetail": ProjectDetail,
     "Projects": Projects,
     "Reports": Reports,
     "Requirements": Requirements,
     "Scan": Scan,
     "Sections": Sections,
-    "PinVerification": PinVerification,
     "SetupPin": SetupPin,
-    "ChangePassword": ChangePassword,
 }
 
 export const pagesConfig = {
