@@ -282,6 +282,12 @@ export default function Parts() {
       const section = sections.find(s => s.id === form.section_id);
       const subsection = subsections.find(ss => ss.id === form.subsection_id);
       
+      // Compute part number components
+      const partNum = form.part_number || '';
+      const project_num = partNum.length >= 3 ? parseInt(partNum.substring(0, 3)) || 0 : 0;
+      const module_letter = partNum.length >= 4 ? partNum.charAt(3) : '';
+      const part_seq = partNum.length >= 5 ? parseInt(partNum.substring(4)) || 0 : 0;
+      
       const partData = {
         ...form,
         min_stock_level: form.min_stock_level ? parseFloat(form.min_stock_level) : null,
@@ -290,7 +296,10 @@ export default function Parts() {
         required_operation_names: opNames,
         project_name: project?.project_name || null,
         section_name: section?.section_name || null,
-        subsection_name: subsection?.subsection_name || null
+        subsection_name: subsection?.subsection_name || null,
+        project_num,
+        module_letter,
+        part_seq
       };
 
       if (editingPart) {
