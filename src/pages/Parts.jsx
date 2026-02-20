@@ -822,13 +822,85 @@ export default function Parts() {
                   {form.allow_sym_opp && (
                     <>
                       <div className="col-span-2">
+                        <Label className="text-blue-700 font-semibold">LH Variant (Left Hand)</Label>
+                        <p className="text-xs text-slate-500 mb-2">Select the finished LH part that this blank produces</p>
+                        <Select value={form.lh_variant_part_id} onValueChange={(v) => setForm({ ...form, lh_variant_part_id: v })}>
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Select LH variant part..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={null}>None</SelectItem>
+                            {parts.filter(p => p.id !== editingPart?.id).map(p => (
+                              <SelectItem key={p.id} value={p.id}>{p.part_number} - {p.part_name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label>LH Part Number Override</Label>
+                        <Input
+                          value={form.lh_part_number_override}
+                          onChange={(e) => setForm({ ...form, lh_part_number_override: e.target.value })}
+                          placeholder="Optional custom number"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>LH Part Name Override</Label>
+                        <Input
+                          value={form.lh_part_name_override}
+                          onChange={(e) => setForm({ ...form, lh_part_name_override: e.target.value })}
+                          placeholder="Optional custom name"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div className="col-span-2">
                         <Label>LH Notes (Left Hand variant)</Label>
                         <Textarea
                           value={form.lh_notes}
                           onChange={(e) => setForm({ ...form, lh_notes: e.target.value })}
                           placeholder="Notes for processing as Left Hand variant..."
                           className="mt-1"
-                          rows={3}
+                          rows={2}
+                        />
+                      </div>
+
+                      <div className="col-span-2">
+                        <Label className="text-green-700 font-semibold">RH Variant (Right Hand)</Label>
+                        <p className="text-xs text-slate-500 mb-2">Select the finished RH part that this blank produces</p>
+                        <Select value={form.rh_variant_part_id} onValueChange={(v) => setForm({ ...form, rh_variant_part_id: v })}>
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Select RH variant part..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={null}>None</SelectItem>
+                            {parts.filter(p => p.id !== editingPart?.id).map(p => (
+                              <SelectItem key={p.id} value={p.id}>{p.part_number} - {p.part_name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label>RH Part Number Override</Label>
+                        <Input
+                          value={form.rh_part_number_override}
+                          onChange={(e) => setForm({ ...form, rh_part_number_override: e.target.value })}
+                          placeholder="Optional custom number"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>RH Part Name Override</Label>
+                        <Input
+                          value={form.rh_part_name_override}
+                          onChange={(e) => setForm({ ...form, rh_part_name_override: e.target.value })}
+                          placeholder="Optional custom name"
+                          className="mt-1"
                         />
                       </div>
 
@@ -839,7 +911,7 @@ export default function Parts() {
                           onChange={(e) => setForm({ ...form, rh_notes: e.target.value })}
                           placeholder="Notes for processing as Right Hand variant..."
                           className="mt-1"
-                          rows={3}
+                          rows={2}
                         />
                       </div>
                     </>
