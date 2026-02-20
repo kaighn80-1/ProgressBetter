@@ -200,21 +200,26 @@ export default function Scan() {
     oscillator.stop(audioContext.currentTime + 0.2);
   };
 
+  const [parts, setParts] = useState([]);
+
   const handleScan = async (barcode) => {
     setShowScanner(false);
     setManualEntry('');
     setLoading(true);
 
     try {
-      const parts = await base44.entities.Part.filter({ barcode: barcode });
-      if (parts.length === 0) {
+      const allParts = await base44.entities.Part.list();
+      setParts(allParts);
+      
+      const matchingParts = allParts.filter(p => p.barcode === barcode);
+      if (matchingParts.length === 0) {
         toast.error('Part not found', { 
           description: `No part with barcode: ${barcode}`,
           duration: 5000
         });
         setScannedPart(null);
       } else {
-        const part = parts[0];
+        const part = matchingParts[0];
         setScannedPart(part);
         
         // Load active WIPs for this part
