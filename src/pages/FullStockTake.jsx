@@ -284,8 +284,8 @@ export default function FullStockTake() {
                       
                       <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-4 gap-2">
                         <div>
-                          <p className="font-medium text-slate-900 text-sm truncate">{item.name}</p>
-                          <p className="text-xs text-slate-500">{item.number}</p>
+                          <p className="font-bold text-slate-900 truncate">{item.number}</p>
+                          <p className="text-xs text-slate-600 font-medium">{item.name}</p>
                         </div>
                         
                         <div className="text-sm">
