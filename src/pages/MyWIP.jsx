@@ -148,12 +148,10 @@ export default function MyWIP() {
   const completeWip = async () => {
     setSaving(true);
     try {
-      // Update WIP status
       await base44.entities.WorkInProgress.update(selectedWip.id, {
         status: 'completed'
       });
 
-      // Get the blank part
       const parts = await base44.entities.Part.filter({ id: selectedWip.part_id });
       if (parts.length === 0) {
         toast.error('Part not found');
@@ -164,10 +162,8 @@ export default function MyWIP() {
       const blankPart = parts[0];
       const lhQty = selectedWip.lh_quantity || 0;
       const rhQty = selectedWip.rh_quantity || 0;
-
       let successMsg = '';
       
-      // Handle LH quantity
       if (lhQty > 0) {
         const newLhStock = (blankPart.finished_stock || 0) + lhQty;
         await base44.entities.Part.update(blankPart.id, {
@@ -189,7 +185,6 @@ export default function MyWIP() {
         successMsg = `${lhQty} LH on ${blankPart.part_number}`;
       }
 
-      // Handle RH quantity
       if (rhQty > 0) {
         const rhPartNumber = selectedWip.rh_part_number;
         if (!rhPartNumber) {
@@ -198,7 +193,6 @@ export default function MyWIP() {
           return;
         }
 
-        // Look for existing part with this part number
         const allParts = await base44.entities.Part.list();
         const rhPart = allParts.find(p => p.part_number === rhPartNumber);
 
@@ -210,7 +204,6 @@ export default function MyWIP() {
           return;
         }
 
-        // Add to existing RH part
         const newRhStock = (rhPart.finished_stock || 0) + rhQty;
         await base44.entities.Part.update(rhPart.id, {
           finished_stock: newRhStock
@@ -237,7 +230,6 @@ export default function MyWIP() {
           duration: 5000
         });
       } else {
-        // Normal part (not sym-opp) - add to finished stock
         const totalQty = selectedWip.quantity;
         const newStock = (blankPart.finished_stock || 0) + totalQty;
         await base44.entities.Part.update(blankPart.id, {
