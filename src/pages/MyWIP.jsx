@@ -149,6 +149,35 @@ export default function MyWIP() {
     }
   };
 
+  const rollupToAssembly = async (partData, qty) => {
+    if (partData.parent_assembly_id && qty > 0) {
+      const assemblies = await base44.entities.Assembly.filter({ id: partData.parent_assembly_id });
+      if (assemblies.length > 0) {
+        const assembly = assemblies[0];
+        const newCompletedQty = (assembly.completed_quantity || 0) + qty;
+        const newAssemblyStock = (assembly.assembly_stock || 0) + qty;
+        
+        await base44.entities.Assembly.update(assembly.id, {
+          completed_quantity: newCompletedQty,
+          assembly_stock: newAssemblyStock
+        });
+
+        await base44.entities.StockTransaction.create({
+          part_id: partData.id,
+          part_name: partData.part_name,
+          transaction_type: 'completed_production',
+          quantity_change: qty,
+          wip_id: selectedWip.id,
+          operation_name: selectedWip.operation_name,
+          user_email: user?.email,
+          user_name: user?.full_name,
+          notes: `Completed Component for Assembly: ${assembly.assembly_number}`
+        });
+      }
+    }
+  };
+
+
   const completeWip = async () => {
     setSaving(true);
     try {
