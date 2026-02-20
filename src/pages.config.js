@@ -56,6 +56,7 @@ import FullStockTakeReport from './pages/FullStockTakeReport';
 import MyWIP from './pages/MyWIP';
 import Operations from './pages/Operations';
 import PartialStockTake from './pages/PartialStockTake';
+import Parts from './pages/Parts';
 import PinVerification from './pages/PinVerification';
 import ProjectDetail from './pages/ProjectDetail';
 import Projects from './pages/Projects';
@@ -64,7 +65,6 @@ import Requirements from './pages/Requirements';
 import Scan from './pages/Scan';
 import Sections from './pages/Sections';
 import SetupPin from './pages/SetupPin';
-import Parts from './pages/Parts';
 import __Layout from './Layout.jsx';
 
 
@@ -78,6 +78,7 @@ export const PAGES = {
     "MyWIP": MyWIP,
     "Operations": Operations,
     "PartialStockTake": PartialStockTake,
+    "Parts": Parts,
     "PinVerification": PinVerification,
     "ProjectDetail": ProjectDetail,
     "Projects": Projects,
@@ -86,7 +87,6 @@ export const PAGES = {
     "Scan": Scan,
     "Sections": Sections,
     "SetupPin": SetupPin,
-    "Parts": Parts,
 }
 
 export const pagesConfig = {
