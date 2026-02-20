@@ -1044,37 +1044,7 @@ export default function Scan() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Quantity</Label>
-              <div className="flex items-center gap-3 mt-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setWipForm({ ...wipForm, quantity: Math.max(1, parseInt(wipForm.quantity || 0) - 1).toString() })}
-                  className="h-12 w-12 text-xl"
-                >
-                  -
-                </Button>
-                <Input
-                  type="number"
-                  min="1"
-                  placeholder="0"
-                  value={wipForm.quantity}
-                  onChange={(e) => setWipForm({ ...wipForm, quantity: e.target.value })}
-                  className="h-12 text-center text-xl font-bold"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setWipForm({ ...wipForm, quantity: (parseInt(wipForm.quantity || 0) + 1).toString() })}
-                  className="h-12 w-12 text-xl"
-                >
-                  +
-                </Button>
-              </div>
-            </div>
+
             <div>
               <Label>Notes (optional)</Label>
               <Textarea
