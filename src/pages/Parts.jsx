@@ -282,6 +282,17 @@ export default function Parts() {
       const section = sections.find(s => s.id === form.section_id);
       const subsection = subsections.find(ss => ss.id === form.subsection_id);
       
+      // If RH part is selected, cache its details
+      let rhPartNumber = form.rh_part_number;
+      let rhPartName = form.rh_part_name;
+      if (form.allow_sym_opp && form.rh_part_id) {
+        const rhPart = parts.find(p => p.id === form.rh_part_id);
+        if (rhPart) {
+          rhPartNumber = rhPart.part_number;
+          rhPartName = rhPart.part_name;
+        }
+      }
+
       const partData = {
         ...form,
         min_stock_level: form.min_stock_level ? parseFloat(form.min_stock_level) : null,
@@ -290,7 +301,9 @@ export default function Parts() {
         required_operation_names: opNames,
         project_name: project?.project_name || null,
         section_name: section?.section_name || null,
-        subsection_name: subsection?.subsection_name || null
+        subsection_name: subsection?.subsection_name || null,
+        rh_part_number: rhPartNumber,
+        rh_part_name: rhPartName
       };
 
       if (editingPart) {
