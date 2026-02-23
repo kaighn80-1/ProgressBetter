@@ -121,9 +121,9 @@ export default function Layout({ children, currentPageName }) {
 
       setAuthChecked(true);
     } catch (e) {
-      // User not logged in - redirect to Login page
+      // User not logged in - redirect to built-in login page
       console.log('User not authenticated - redirecting to login');
-      navigate('/Login');
+      base44.auth.redirectToLogin(location.pathname);
       setAuthChecked(true);
     }
   };
