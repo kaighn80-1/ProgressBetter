@@ -17,7 +17,6 @@ export default function ChangePassword() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
-  const [backendFunctionsEnabled, setBackendFunctionsEnabled] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -86,28 +85,28 @@ export default function ChangePassword() {
 
     setLoading(true);
 
-    // Note: This requires backend functions to be enabled
-    // For now, we'll update the tracking fields and show appropriate message
-    if (!backendFunctionsEnabled) {
-      toast.error('Password change requires backend functions to be enabled. Please contact your administrator.');
-      setLoading(false);
-      return;
-    }
-
     try {
-      // TODO: Call backend function to change password
-      // await base44.functions.changePassword({ currentPassword, newPassword });
-      
-      // Update tracking fields
-      await base44.auth.updateMe({
-        last_password_change: new Date().toISOString().split('T')[0],
-        must_change_password: false
+      // Call backend function to change password
+      const response = await base44.functions.changePassword({ 
+        currentPassword, 
+        newPassword 
       });
 
-      toast.success('Password changed successfully');
-      navigate('/Dashboard');
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      toast.success('Password changed successfully!');
+      
+      // Small delay to ensure database is updated
+      setTimeout(() => {
+        navigate('/Dashboard');
+      }, 500);
+      
     } catch (error) {
+      console.error('Password change error:', error);
       toast.error(error.message || 'Failed to change password');
+    } finally {
       setLoading(false);
     }
   };
@@ -160,13 +159,15 @@ export default function ChangePassword() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Alert className="mb-6 border-orange-200 bg-orange-50">
-            <AlertTriangle className="h-4 w-4 text-orange-600" />
-            <AlertDescription className="text-sm text-orange-800">
-              <strong>Note:</strong> Password changing requires backend functions to be enabled in your app settings.
-              This feature is currently not available.
-            </AlertDescription>
-          </Alert>
+          {user.must_change_password && (
+            <Alert className="mb-6 border-orange-200 bg-orange-50">
+              <AlertTriangle className="h-4 w-4 text-orange-600" />
+              <AlertDescription className="text-sm text-orange-800">
+                <strong>Security Notice:</strong> You are using a temporary password. 
+                Please create a strong password to secure your account.
+              </AlertDescription>
+            </Alert>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -189,6 +190,7 @@ export default function ChangePassword() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 disabled={loading}
+                className="h-12 text-base"
                 required
               />
               <p className="text-xs text-slate-500">
@@ -204,6 +206,7 @@ export default function ChangePassword() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={loading}
+                className="h-12 text-base"
                 required
               />
             </div>
@@ -211,8 +214,9 @@ export default function ChangePassword() {
             <div className="space-y-2 pt-2">
               <Button
                 type="submit"
-                className="w-full h-11"
-                disabled={loading || !backendFunctionsEnabled}
+                className="w-full h-12 text-base"
+                disabled={loading}
+                style={{ backgroundColor: '#3B82F6', color: 'white' }}
               >
                 {loading ? (
                   <>
