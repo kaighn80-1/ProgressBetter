@@ -79,7 +79,7 @@ export default function Dashboard() {
   const isSupervisor = user?.role === 'supervisor';
   const canManageTeam = isAdmin; // Only full managers can invite/manage users
   const myWips = wips.filter(w => w.worker_email === user?.email);
-  const lowStockParts = parts.filter(p => p.min_stock_level && (p.finished_stock || 0) < p.min_stock_level);
+  const lowStockParts = parts.filter(p => p.min_stock_level && (p.raw_stock || 0) < p.min_stock_level);
   const lowStockFixings = fixings.filter(f => f.min_stock_level && (f.current_stock || 0) < f.min_stock_level);
   const totalStock = parts.reduce((sum, p) => sum + (p.finished_stock || 0), 0);
   const totalWipQuantity = wips.reduce((sum, w) => sum + (w.quantity || 0), 0);
@@ -288,7 +288,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold" style={{ color: '#F59E0B' }}>{part.finished_stock || 0}</p>
+                  <p className="font-bold" style={{ color: '#F59E0B' }}>{part.raw_stock || 0}</p>
                   <p className="text-xs" style={{ color: '#64748B' }}>Min: {part.min_stock_level}</p>
                 </div>
               </div>

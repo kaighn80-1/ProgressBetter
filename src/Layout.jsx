@@ -114,7 +114,7 @@ export default function Layout({ children, currentPageName }) {
     try {
       const parts = await base44.entities.Part.list();
       const lowStock = parts.filter(p => 
-        p.min_stock_level && (p.finished_stock || 0) < p.min_stock_level
+        p.min_stock_level && (p.raw_stock || 0) < p.min_stock_level
       );
       setLowStockCount(lowStock.length);
     } catch (e) {
