@@ -53,6 +53,21 @@ export default function Layout({ children, currentPageName }) {
 
     try {
       const userData = await base44.auth.me();
+      
+      // Force logout on page refresh/reload
+      // Check if this is a fresh login or a page refresh
+      const loginMarker = sessionStorage.getItem('fresh_login');
+      
+      if (!loginMarker) {
+        // No marker = page was refreshed or reopened → force logout
+        console.log('Page refresh detected - logging out');
+        sessionStorage.clear();
+        base44.auth.logout();
+        return;
+      }
+      
+      // Clear the marker so next refresh will logout
+      sessionStorage.removeItem('fresh_login');
       setUser(userData);
       setViewMode(userData.view_mode || 'manager');
 
