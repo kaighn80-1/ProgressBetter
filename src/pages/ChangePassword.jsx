@@ -178,6 +178,7 @@ export default function ChangePassword() {
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 disabled={loading}
+                className="h-12 text-base"
                 required
               />
             </div>
