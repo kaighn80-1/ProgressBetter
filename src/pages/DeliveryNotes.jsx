@@ -552,10 +552,7 @@ export default function DeliveryNotes() {
         <div className="grid gap-4">
           {filteredNotes.map((note) => (
             <Card key={note.id} className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => {
-                setCurrentNote(note);
-                setShowViewDialog(true);
-              }}>
+              onClick={() => navigate(createPageUrl('DeliveryNoteDetail') + `?id=${note.id}`)}>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div>

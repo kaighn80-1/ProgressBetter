@@ -47,8 +47,10 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import Assemblies from './pages/Assemblies';
 import ChangePassword from './pages/ChangePassword';
 import Dashboard from './pages/Dashboard';
+import DeliveryNotes from './pages/DeliveryNotes';
 import Fixings from './pages/Fixings';
 import FullStockTake from './pages/FullStockTake';
 import FullStockTakeReport from './pages/FullStockTakeReport';
@@ -64,14 +66,15 @@ import Requirements from './pages/Requirements';
 import Scan from './pages/Scan';
 import Sections from './pages/Sections';
 import SetupPin from './pages/SetupPin';
-import Assemblies from './pages/Assemblies';
-import DeliveryNotes from './pages/DeliveryNotes';
+import DeliveryNoteDetail from './pages/DeliveryNoteDetail';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "Assemblies": Assemblies,
     "ChangePassword": ChangePassword,
     "Dashboard": Dashboard,
+    "DeliveryNotes": DeliveryNotes,
     "Fixings": Fixings,
     "FullStockTake": FullStockTake,
     "FullStockTakeReport": FullStockTakeReport,
@@ -87,8 +90,7 @@ export const PAGES = {
     "Scan": Scan,
     "Sections": Sections,
     "SetupPin": SetupPin,
-    "Assemblies": Assemblies,
-    "DeliveryNotes": DeliveryNotes,
+    "DeliveryNoteDetail": DeliveryNoteDetail,
 }
 
 export const pagesConfig = {
