@@ -50,6 +50,7 @@
 import Assemblies from './pages/Assemblies';
 import ChangePassword from './pages/ChangePassword';
 import Dashboard from './pages/Dashboard';
+import DeliveryNoteDetail from './pages/DeliveryNoteDetail';
 import DeliveryNotes from './pages/DeliveryNotes';
 import Fixings from './pages/Fixings';
 import FullStockTake from './pages/FullStockTake';
@@ -66,7 +67,7 @@ import Requirements from './pages/Requirements';
 import Scan from './pages/Scan';
 import Sections from './pages/Sections';
 import SetupPin from './pages/SetupPin';
-import DeliveryNoteDetail from './pages/DeliveryNoteDetail';
+import TeamMembers from './pages/TeamMembers';
 import __Layout from './Layout.jsx';
 
 
@@ -74,6 +75,7 @@ export const PAGES = {
     "Assemblies": Assemblies,
     "ChangePassword": ChangePassword,
     "Dashboard": Dashboard,
+    "DeliveryNoteDetail": DeliveryNoteDetail,
     "DeliveryNotes": DeliveryNotes,
     "Fixings": Fixings,
     "FullStockTake": FullStockTake,
@@ -90,7 +92,7 @@ export const PAGES = {
     "Scan": Scan,
     "Sections": Sections,
     "SetupPin": SetupPin,
-    "DeliveryNoteDetail": DeliveryNoteDetail,
+    "TeamMembers": TeamMembers,
 }
 
 export const pagesConfig = {
