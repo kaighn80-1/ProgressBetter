@@ -111,9 +111,6 @@ export default function PinVerification() {
         }
       }
 
-      // Set fresh login marker to prevent immediate logout
-      sessionStorage.setItem('fresh_login', 'true');
-      
       // All good - redirect to dashboard
       navigate('/Dashboard');
     } catch (error) {
