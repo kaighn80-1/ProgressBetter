@@ -44,13 +44,16 @@ export default function Layout({ children, currentPageName }) {
   }, [location.pathname]);
 
   const checkAuthAndRedirect = async () => {
-    // Skip auth check for auth-related pages
-    const authPages = ['/PinVerification', '/SetupPin', '/ChangePassword'];
-    if (authPages.includes(location.pathname)) {
+    // Skip auth check for Login page only
+    const publicPages = ['/Login'];
+    if (publicPages.includes(location.pathname)) {
       setAuthChecked(true);
       return;
     }
 
+    // Skip auth check for auth-related pages
+    const authPages = ['/PinVerification', '/SetupPin', '/ChangePassword'];
+    
     try {
       const userData = await base44.auth.me();
       
@@ -118,7 +121,9 @@ export default function Layout({ children, currentPageName }) {
 
       setAuthChecked(true);
     } catch (e) {
-      console.log('User not logged in');
+      // User not logged in - redirect to Login page
+      console.log('User not authenticated - redirecting to login');
+      navigate('/Login');
       setAuthChecked(true);
     }
   };
