@@ -79,16 +79,9 @@ export default function Dashboard() {
   const isSupervisor = user?.role === 'supervisor';
   const canManageTeam = isAdmin; // Only full managers can invite/manage users
   const myWips = wips.filter(w => w.worker_email === user?.email);
-  const lowStockParts = parts.filter(p => {
-    if (!p.min_stock_level) return false;
-    const rawLow = (p.raw_stock || 0) < p.min_stock_level;
-    const finishedLow = (p.finished_stock || 0) < p.min_stock_level;
-    return rawLow || finishedLow;
-  }).map(p => ({
-    ...p,
-    isRawLow: (p.raw_stock || 0) < p.min_stock_level,
-    isFinishedLow: (p.finished_stock || 0) < p.min_stock_level
-  }));
+  const lowStockParts = parts.filter(p => 
+    p.min_stock_level && (p.raw_stock || 0) < p.min_stock_level
+  );
   const lowStockFixings = fixings.filter(f => f.min_stock_level && (f.current_stock || 0) < f.min_stock_level);
   const totalStock = parts.reduce((sum, p) => sum + (p.finished_stock || 0), 0);
   const totalWipQuantity = wips.reduce((sum, w) => sum + (w.quantity || 0), 0);
@@ -286,41 +279,20 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="space-y-3">
             {lowStockParts.slice(0, 3).map((part) => (
-              <div key={part.id} className="space-y-2">
-                {part.isRawLow && (
-                  <div className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: '#FEF3C7' }}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                        <Package className="w-5 h-5" style={{ color: '#F59E0B' }} />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm" style={{ color: '#1E293B' }}>{part.part_name}</p>
-                        <p className="text-xs" style={{ color: '#64748B' }}>{part.part_number} • Low Raw Stock</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold" style={{ color: '#F59E0B' }}>{part.raw_stock || 0}</p>
-                      <p className="text-xs" style={{ color: '#64748B' }}>Min: {part.min_stock_level}</p>
-                    </div>
+              <div key={part.id} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: '#FEF3C7' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                    <Package className="w-5 h-5" style={{ color: '#F59E0B' }} />
                   </div>
-                )}
-                {part.isFinishedLow && (
-                  <div className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: '#DBEAFE' }}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                        <Package className="w-5 h-5" style={{ color: '#3B82F6' }} />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm" style={{ color: '#1E293B' }}>{part.part_name}</p>
-                        <p className="text-xs" style={{ color: '#64748B' }}>{part.part_number} • Low Finished Stock</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold" style={{ color: '#3B82F6' }}>{part.finished_stock || 0}</p>
-                      <p className="text-xs" style={{ color: '#64748B' }}>Min: {part.min_stock_level}</p>
-                    </div>
+                  <div>
+                    <p className="font-medium text-sm" style={{ color: '#1E293B' }}>{part.part_name}</p>
+                    <p className="text-xs" style={{ color: '#64748B' }}>{part.part_number} • Low Raw Stock</p>
                   </div>
-                )}
+                </div>
+                <div className="text-right">
+                  <p className="font-bold" style={{ color: '#F59E0B' }}>{part.raw_stock || 0}</p>
+                  <p className="text-xs" style={{ color: '#64748B' }}>Min: {part.min_stock_level}</p>
+                </div>
               </div>
             ))}
             {lowStockFixings.slice(0, 2).map((fixing) => (

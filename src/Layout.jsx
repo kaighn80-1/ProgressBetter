@@ -113,17 +113,10 @@ export default function Layout({ children, currentPageName }) {
   const loadLowStockCount = async () => {
     try {
       const parts = await base44.entities.Part.list();
-      let lowStockCount = 0;
-      
-      parts.forEach(p => {
-        if (p.min_stock_level) {
-          const rawLow = (p.raw_stock || 0) < p.min_stock_level;
-          const finishedLow = (p.finished_stock || 0) < p.min_stock_level;
-          if (rawLow || finishedLow) lowStockCount++;
-        }
-      });
-      
-      setLowStockCount(lowStockCount);
+      const lowStock = parts.filter(p => 
+        p.min_stock_level && (p.raw_stock || 0) < p.min_stock_level
+      );
+      setLowStockCount(lowStock.length);
     } catch (e) {
       console.log('Could not load parts');
     }

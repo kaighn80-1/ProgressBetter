@@ -505,7 +505,7 @@ export default function Parts() {
           </Card>
         ) : (
           filteredParts.map((part) => {
-            const isLowStock = part.min_stock_level && (part.finished_stock || 0) < part.min_stock_level;
+            const isLowStock = part.min_stock_level && (part.raw_stock || 0) < part.min_stock_level;
             
             return (
               <Card 
