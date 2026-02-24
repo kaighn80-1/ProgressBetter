@@ -35,6 +35,7 @@ const UNITS = ['pcs', 'kg', 'm', 'l', 'box', 'set'];
 
 export default function Parts() {
   const [parts, setParts] = useState([]);
+  const [assemblies, setAssemblies] = useState([]);
   const [operations, setOperations] = useState([]);
   const [fixings, setFixings] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -72,7 +73,9 @@ export default function Parts() {
     tooling_required: '',
     tooling_location: '',
     finish_type: '',
-    assembly_number: '',
+    parent_assembly_id: '',
+    parent_assembly_number: '',
+    parent_assembly_name: '',
     location: '',
     required_fixings: [],
     allow_sym_opp: false,
@@ -98,8 +101,9 @@ export default function Parts() {
 
   const loadParts = async () => {
     try {
-      const [partsData, opsData, fixingsData, projectsData, sectionsData, subsectionsData] = await Promise.all([
+      const [partsData, assembliesData, opsData, fixingsData, projectsData, sectionsData, subsectionsData] = await Promise.all([
         base44.entities.Part.list(),
+        base44.entities.Assembly.list('assembly_number'),
         base44.entities.Operation.list('sequence_number'),
         base44.entities.Fixing.list('fixing_name'),
         base44.entities.Project.list('project_name'),
@@ -127,6 +131,7 @@ export default function Parts() {
       });
       
       setParts(sortedParts);
+      setAssemblies(assembliesData);
       setOperations(opsData);
       setFixings(fixingsData);
       setProjects(projectsData);
@@ -179,7 +184,9 @@ export default function Parts() {
       tooling_required: '',
       tooling_location: '',
       finish_type: '',
-      assembly_number: '',
+      parent_assembly_id: '',
+      parent_assembly_number: '',
+      parent_assembly_name: '',
       location: '',
       required_fixings: [],
       allow_sym_opp: false,
@@ -211,7 +218,9 @@ export default function Parts() {
       tooling_required: part.tooling_required || '',
       tooling_location: part.tooling_location || '',
       finish_type: part.finish_type || '',
-      assembly_number: part.assembly_number || '',
+      parent_assembly_id: part.parent_assembly_id || '',
+      parent_assembly_number: part.parent_assembly_number || '',
+      parent_assembly_name: part.parent_assembly_name || '',
       location: part.location || '',
       required_fixings: part.required_fixings || [],
       allow_sym_opp: part.allow_sym_opp || false,
@@ -332,6 +341,17 @@ export default function Parts() {
         }
       }
 
+      // If parent assembly is selected, cache its details
+      let parentAssemblyNumber = form.parent_assembly_number;
+      let parentAssemblyName = form.parent_assembly_name;
+      if (form.parent_assembly_id) {
+        const assembly = assemblies.find(a => a.id === form.parent_assembly_id);
+        if (assembly) {
+          parentAssemblyNumber = assembly.assembly_number;
+          parentAssemblyName = assembly.assembly_name;
+        }
+      }
+
       // Auto-compute sorting fields from part_number
       const partNum = form.part_number || '';
       let projectNum = 0;
@@ -372,6 +392,8 @@ export default function Parts() {
         subsection_name: subsection?.subsection_name || null,
         rh_part_number: rhPartNumber,
         rh_part_name: rhPartName,
+        parent_assembly_number: parentAssemblyNumber,
+        parent_assembly_name: parentAssemblyName,
         project_num: projectNum,
         module_letter: moduleLetter,
         part_seq: partSeq
@@ -765,13 +787,31 @@ export default function Parts() {
               </div>
 
               <div>
-                <Label>Assembly Number</Label>
-                <Input
-                  value={form.assembly_number}
-                  onChange={(e) => setForm({ ...form, assembly_number: e.target.value })}
-                  placeholder="Parent assembly"
-                  className="mt-1"
-                />
+                <Label>Parent Assembly</Label>
+                <Select 
+                  value={form.parent_assembly_id} 
+                  onValueChange={(v) => {
+                    const selectedAssembly = assemblies.find(a => a.id === v);
+                    setForm({ 
+                      ...form, 
+                      parent_assembly_id: v,
+                      parent_assembly_number: selectedAssembly?.assembly_number || '',
+                      parent_assembly_name: selectedAssembly?.assembly_name || ''
+                    });
+                  }}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={null}>None</SelectItem>
+                    {assemblies.map(a => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.assembly_number} - {a.assembly_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="col-span-2">
