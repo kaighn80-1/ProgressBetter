@@ -14,7 +14,7 @@ export default async function sendDailyLowStockReport(context) {
   
   // ===== CONFIGURATION =====
   const RECIPIENTS = [
-    'manager@yourcompany.com',
+    'phumphreys@tecniq.co.uk',
     // Add more recipients here:
     // 'supervisor@yourcompany.com',
   ];
