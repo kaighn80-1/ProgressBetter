@@ -84,12 +84,13 @@ export default function FullStockTakeReport() {
     
     // Parts Section
     csvContent += `PARTS INVENTORY\n`;
-    csvContent += `Part Name,Part Number,Project,Subsection,Current Stock,Min Stock,Reorder Qty,Location,Last Counted,Status\n`;
+    csvContent += `Part Name,Part Number,Project,Subsection,Blank Qty,Finished Qty,WIP,Total Stock,Min Stock,Reorder Qty,Location,Last Counted,Status\n`;
     
     parts.forEach(part => {
       const isLowStock = part.min_stock_level && (part.finished_stock || 0) < part.min_stock_level;
+      const totalStock = (part.raw_stock || 0) + (part.finished_stock || 0);
       const status = isLowStock ? 'LOW STOCK' : 'OK';
-      csvContent += `"${part.part_name}","${part.part_number}","${part.project_name || ''}","${part.subsection_name || ''}",${part.finished_stock || 0},${part.min_stock_level || 0},${part.reorder_quantity || 0},"${part.location || ''}","${part.last_counted_date || ''}",${status}\n`;
+      csvContent += `"${part.part_name}","${part.part_number}","${part.project_name || ''}","${part.subsection_name || ''}",${part.raw_stock || 0},${part.finished_stock || 0},${part.wip_quantity || 0},${totalStock},${part.min_stock_level || 0},${part.reorder_quantity || 0},"${part.location || ''}","${part.last_counted_date || ''}",${status}\n`;
     });
     
     csvContent += `\n\nFIXINGS INVENTORY\n`;
@@ -370,6 +371,7 @@ export default function FullStockTakeReport() {
                             <th className="text-left p-2 print:p-1 border" style={{ color: '#64748B' }}>Part Name</th>
                             <th className="text-left p-2 print:p-1 border" style={{ color: '#64748B' }}>Part Number</th>
                             <th className="text-left p-2 print:p-1 border" style={{ color: '#64748B' }}>Subsection</th>
+                            <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>Blank Qty</th>
                             <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>Finished</th>
                             <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>WIP</th>
                             <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>Min</th>
@@ -381,12 +383,17 @@ export default function FullStockTakeReport() {
                         <tbody>
                           {projectParts.map(part => {
                             const isLowStock = part.min_stock_level && (part.finished_stock || 0) < part.min_stock_level;
+                            const isLowBlank = part.min_stock_level && (part.raw_stock || 0) < part.min_stock_level;
                             return (
                               <tr key={part.id} className={isLowStock ? 'print:bg-amber-50' : ''}
                                 style={isLowStock ? { backgroundColor: '#FEF3C7' } : {}}>
                                 <td className="p-2 print:p-1 border font-medium">{part.part_name}</td>
                                 <td className="p-2 print:p-1 border font-mono text-xs">{part.part_number}</td>
                                 <td className="p-2 print:p-1 border text-xs">{part.subsection_name || '-'}</td>
+                                <td className="p-2 print:p-1 border text-center font-bold"
+                                  style={{ color: isLowBlank ? '#F59E0B' : '#64748B' }}>
+                                  {part.raw_stock || 0}
+                                </td>
                                 <td className="p-2 print:p-1 border text-center font-bold"
                                   style={{ color: isLowStock ? '#F59E0B' : '#1E293B' }}>
                                   {part.finished_stock || 0}
@@ -433,6 +440,7 @@ export default function FullStockTakeReport() {
                         <tr style={{ backgroundColor: '#F1F5F9' }}>
                           <th className="text-left p-2 print:p-1 border" style={{ color: '#64748B' }}>Part Name</th>
                           <th className="text-left p-2 print:p-1 border" style={{ color: '#64748B' }}>Part Number</th>
+                          <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>Blank Qty</th>
                           <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>Finished</th>
                           <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>WIP</th>
                           <th className="text-center p-2 print:p-1 border" style={{ color: '#64748B' }}>Min</th>
@@ -444,11 +452,16 @@ export default function FullStockTakeReport() {
                       <tbody>
                         {unassignedParts.map(part => {
                           const isLowStock = part.min_stock_level && (part.finished_stock || 0) < part.min_stock_level;
+                          const isLowBlank = part.min_stock_level && (part.raw_stock || 0) < part.min_stock_level;
                           return (
                             <tr key={part.id} className={isLowStock ? 'print:bg-amber-50' : ''}
                               style={isLowStock ? { backgroundColor: '#FEF3C7' } : {}}>
                               <td className="p-2 print:p-1 border font-medium">{part.part_name}</td>
                               <td className="p-2 print:p-1 border font-mono text-xs">{part.part_number}</td>
+                              <td className="p-2 print:p-1 border text-center font-bold"
+                                style={{ color: isLowBlank ? '#F59E0B' : '#64748B' }}>
+                                {part.raw_stock || 0}
+                              </td>
                               <td className="p-2 print:p-1 border text-center font-bold"
                                 style={{ color: isLowStock ? '#F59E0B' : '#1E293B' }}>
                                 {part.finished_stock || 0}
