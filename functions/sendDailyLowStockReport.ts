@@ -12,22 +12,22 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
-  const base44 = createClientFromRequest(req);
-  
-  // ===== CONFIGURATION =====
-  const RECIPIENTS = [
-    'phumphreys@tecniq.co.uk',
-    // Add more recipients here:
-    // 'supervisor@yourcompany.com',
-  ];
-  
-  const COMPANY_NAME = 'Progress Better';
-  
   try {
+    const base44 = createClientFromRequest(req);
+    
+    // ===== CONFIGURATION =====
+    const RECIPIENTS = [
+      'phumphreys@tecniq.co.uk',
+      // Add more recipients here:
+      // 'supervisor@yourcompany.com',
+    ];
+    
+    const COMPANY_NAME = 'Progress Better';
+    
     console.log('🔍 Starting daily low stock report...');
     
     // Query all parts with low raw stock
-    const allParts = await base44.entities.Part.list();
+    const allParts = await base44.asServiceRole.entities.Part.list();
     const lowStockParts = allParts.filter(p => 
       p.min_stock_level && (p.raw_stock || 0) < p.min_stock_level
     );
@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
       
       // Send to all recipients
       for (const recipient of RECIPIENTS) {
-        await base44.integrations.Core.SendEmail({
+        await base44.asServiceRole.integrations.Core.SendEmail({
           to: recipient,
           from_name: `${COMPANY_NAME} Inventory`,
           subject: subject.replace('📦', '✅'),
@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
     
     // Send to all recipients
     for (const recipient of RECIPIENTS) {
-      await base44.integrations.Core.SendEmail({
+      await base44.asServiceRole.integrations.Core.SendEmail({
         to: recipient,
         from_name: `${COMPANY_NAME} Inventory`,
         subject: subject,
@@ -231,8 +231,12 @@ Deno.serve(async (req) => {
     console.error('❌ Error generating low stock report:', error);
     
     // Send error notification to first recipient
+    const RECIPIENTS = ['phumphreys@tecniq.co.uk'];
+    const COMPANY_NAME = 'Progress Better';
+    
     try {
-      await base44.integrations.Core.SendEmail({
+      const base44 = createClientFromRequest(req);
+      await base44.asServiceRole.integrations.Core.SendEmail({
         to: RECIPIENTS[0],
         from_name: `${COMPANY_NAME} Inventory`,
         subject: '❌ Low Stock Report Failed',
@@ -248,8 +252,5 @@ Deno.serve(async (req) => {
     }
     
     return Response.json({ success: false, error: error.message }, { status: 500 });
-  } catch (outerError) {
-    console.error('Fatal error:', outerError);
-    return Response.json({ success: false, error: outerError.message }, { status: 500 });
   }
 });
