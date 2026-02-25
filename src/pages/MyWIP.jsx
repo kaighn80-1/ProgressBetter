@@ -25,7 +25,8 @@ import {
   Pause,
   Play,
   CheckCircle,
-  Circle
+  Circle,
+  XCircle
 } from 'lucide-react';
 
 export default function MyWIP() {
@@ -39,6 +40,7 @@ export default function MyWIP() {
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showScrapDialog, setShowScrapDialog] = useState(false);
   const [showPauseDialog, setShowPauseDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState('my');
   
@@ -46,6 +48,7 @@ export default function MyWIP() {
   const [completeForm, setCompleteForm] = useState({ notes: '' });
   const [scrapForm, setScrapForm] = useState({ reason: '' });
   const [pauseForm, setPauseForm] = useState({ notes: '' });
+  const [cancelForm, setCancelForm] = useState({ reason: '' });
 
   useEffect(() => {
     loadData();
@@ -60,15 +63,16 @@ export default function MyWIP() {
 
   const loadData = async () => {
     try {
-      const [userData, activeWips, pausedWips, ops, partsData] = await Promise.all([
+      const [userData, activeWips, pausedWips, cancelledWips, ops, partsData] = await Promise.all([
         base44.auth.me(),
         base44.entities.WorkInProgress.filter({ status: 'active' }, '-started_date'),
         base44.entities.WorkInProgress.filter({ status: 'paused' }, '-started_date'),
+        base44.entities.WorkInProgress.filter({ status: 'cancelled' }, '-started_date'),
         base44.entities.Operation.list('sequence_number'),
         base44.entities.Part.list()
       ]);
       setUser(userData);
-      setWips([...activeWips, ...pausedWips]);
+      setWips([...activeWips, ...pausedWips, ...cancelledWips]);
       setOperations(ops);
       setParts(partsData);
     } catch (e) {
@@ -92,6 +96,7 @@ export default function MyWIP() {
   const isAdmin = user?.role === 'admin';
   const isSupervisor = user?.role === 'supervisor';
   const canViewAllWIPs = isAdmin || isSupervisor;
+  const canCancelWIP = isAdmin || isSupervisor;
   const filteredWips = filter === 'all' ? wips : wips.filter(w => w.worker_email === user?.email);
 
   const getPartForWip = (wip) => {
@@ -471,6 +476,55 @@ export default function MyWIP() {
     }
   };
 
+  const cancelWip = async () => {
+    if (!cancelForm.reason) {
+      toast.error('Please provide a reason for cancellation');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Update WIP status to cancelled
+      await base44.entities.WorkInProgress.update(selectedWip.id, {
+        status: 'cancelled',
+        notes: `CANCELLED: ${cancelForm.reason}`
+      });
+
+      // Return quantity to raw stock
+      const partData = await base44.entities.Part.filter({ id: selectedWip.part_id });
+      if (partData.length > 0) {
+        const newRawStock = (partData[0].raw_stock || 0) + selectedWip.quantity;
+        await base44.entities.Part.update(selectedWip.part_id, {
+          raw_stock: newRawStock
+        });
+      }
+
+      // Create stock transaction
+      await base44.entities.StockTransaction.create({
+        part_id: selectedWip.part_id,
+        part_name: selectedWip.part_name,
+        transaction_type: 'adjustment',
+        quantity_change: selectedWip.quantity,
+        wip_id: selectedWip.id,
+        operation_name: selectedWip.operation_name,
+        user_email: user?.email,
+        user_name: user?.full_name,
+        notes: `WIP Cancelled - Returned to raw stock. Reason: ${cancelForm.reason}`
+      });
+
+      toast.success('WIP batch cancelled. Quantity returned to raw stock.');
+      setShowCancelDialog(false);
+      setCancelForm({ reason: '' });
+      setSelectedWip(null);
+      loadData();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to cancel batch');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-4 pb-24">
@@ -515,18 +569,19 @@ export default function MyWIP() {
           {filteredWips.map((wip) => {
             const progress = getWipProgress(wip);
             const isPaused = wip.status === 'paused';
+            const isCancelled = wip.status === 'cancelled';
             
             return (
               <Card 
                 key={wip.id} 
-                className={`border-0 shadow-md cursor-pointer hover:shadow-lg transition-shadow ${isPaused ? 'border-l-4 border-l-amber-500' : ''}`}
-                onClick={() => !isPaused ? setSelectedWip(wip) : null}
+                className={`border-0 shadow-md ${!isCancelled ? 'cursor-pointer hover:shadow-lg' : 'opacity-60'} transition-shadow ${isPaused ? 'border-l-4 border-l-amber-500' : ''} ${isCancelled ? 'border-l-4 border-l-red-500 bg-gray-50' : ''}`}
+                onClick={() => !isPaused && !isCancelled ? setSelectedWip(wip) : null}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${isPaused ? 'bg-amber-100' : 'bg-blue-100'}`}>
-                        {isPaused ? <Pause className="w-7 h-7 text-amber-600" /> : <Package className="w-7 h-7 text-blue-600" />}
+                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${isPaused ? 'bg-amber-100' : isCancelled ? 'bg-red-100' : 'bg-blue-100'}`}>
+                        {isPaused ? <Pause className="w-7 h-7 text-amber-600" /> : isCancelled ? <Trash2 className="w-7 h-7 text-red-600" /> : <Package className="w-7 h-7 text-blue-600" />}
                       </div>
                       <div>
                         <h3 className="text-xl font-bold text-slate-900">{(() => {
@@ -535,8 +590,8 @@ export default function MyWIP() {
                         })()}</h3>
                         <p className="text-sm text-slate-600 font-medium">{wip.part_name}</p>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <Badge variant="secondary" className={isPaused ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}>
-                            {isPaused ? 'Paused' : wip.operation_name}
+                          <Badge variant="secondary" className={isPaused ? 'bg-amber-100 text-amber-700' : isCancelled ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}>
+                            {isPaused ? 'Paused' : isCancelled ? 'Cancelled' : wip.operation_name}
                           </Badge>
                           <Badge variant="outline">
                             {wip.quantity} pcs
@@ -565,6 +620,10 @@ export default function MyWIP() {
                       <Button size="sm" onClick={(e) => { e.stopPropagation(); resumeWip(wip); }} disabled={saving}>
                         <Play className="w-4 h-4 mr-1" /> Resume
                       </Button>
+                    ) : isCancelled ? (
+                      <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
+                        Cancelled
+                      </Badge>
                     ) : (
                       <ChevronRight className="w-5 h-5 text-slate-400" />
                     )}
@@ -577,7 +636,7 @@ export default function MyWIP() {
       )}
 
       {/* WIP Detail Dialog */}
-      <Dialog open={!!selectedWip && !showMoveDialog && !showCompleteDialog && !showScrapDialog && !showPauseDialog} onOpenChange={() => setSelectedWip(null)}>
+      <Dialog open={!!selectedWip && !showMoveDialog && !showCompleteDialog && !showScrapDialog && !showPauseDialog && !showCancelDialog} onOpenChange={() => setSelectedWip(null)}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">
@@ -731,6 +790,17 @@ export default function MyWIP() {
                   <Trash2 className="w-5 h-5 mr-2" />
                   Scrap Batch
                 </Button>
+                {canCancelWIP && (
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowCancelDialog(true)}
+                    className="h-12 border-red-600 text-red-700 hover:bg-red-50"
+                    style={{ backgroundColor: '#FEE2E2', borderColor: '#EF4444', color: '#991B1B' }}
+                  >
+                    <Trash2 className="w-5 h-5 mr-2" />
+                    Cancel WIP
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -904,6 +974,42 @@ export default function MyWIP() {
             <Button onClick={pauseWip} disabled={saving} className="bg-amber-600 hover:bg-amber-700">
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Pause className="w-4 h-4 mr-2" />}
               Pause Batch
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel WIP Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Cancel WIP Batch</DialogTitle>
+            <DialogDescription>
+              This will return {selectedWip?.quantity} units to raw stock and mark the batch as Cancelled. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Reason for Cancellation *</Label>
+              <Textarea
+                placeholder="Enter reason (required)..."
+                value={cancelForm.reason}
+                onChange={(e) => setCancelForm({ ...cancelForm, reason: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={cancelWip} 
+              disabled={saving} 
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+              Cancel WIP Batch
             </Button>
           </DialogFooter>
         </DialogContent>
