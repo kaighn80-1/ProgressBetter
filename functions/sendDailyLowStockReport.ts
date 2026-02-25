@@ -12,8 +12,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
-  try {
-    const base44 = createClientFromRequest(req);
+  const base44 = createClientFromRequest(req);
   
   // ===== CONFIGURATION =====
   const RECIPIENTS = [
@@ -249,5 +248,8 @@ Deno.serve(async (req) => {
     }
     
     return Response.json({ success: false, error: error.message }, { status: 500 });
+  } catch (outerError) {
+    console.error('Fatal error:', outerError);
+    return Response.json({ success: false, error: outerError.message }, { status: 500 });
   }
 });
