@@ -9,8 +9,11 @@
  * - Stock threshold uses each part's min_stock_level field
  */
 
-export default async function sendDailyLowStockReport(context) {
-  const { base44 } = context;
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
   
   // ===== CONFIGURATION =====
   const RECIPIENTS = [
@@ -87,7 +90,7 @@ export default async function sendDailyLowStockReport(context) {
       }
       
       console.log('✅ Positive report sent successfully');
-      return { success: true, message: 'All stock OK - positive report sent', count: 0 };
+      return Response.json({ success: true, message: 'All stock OK - positive report sent', count: 0 });
     }
     
     // Sort by shortfall (most urgent first)
@@ -218,12 +221,12 @@ export default async function sendDailyLowStockReport(context) {
     }
     
     console.log('✅ Low stock report sent successfully');
-    return { 
+    return Response.json({ 
       success: true, 
       message: `Report sent to ${RECIPIENTS.length} recipient(s)`,
       count: lowStockParts.length,
       totalShortfall: totalShortfall
-    };
+    });
     
   } catch (error) {
     console.error('❌ Error generating low stock report:', error);
@@ -245,6 +248,6 @@ export default async function sendDailyLowStockReport(context) {
       console.error('Failed to send error notification:', emailError);
     }
     
-    return { success: false, error: error.message };
+    return Response.json({ success: false, error: error.message }, { status: 500 });
   }
-}
+});
