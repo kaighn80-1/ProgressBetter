@@ -1,12 +1,12 @@
 /**
  * Daily Low Stock Report - Automated Email
  * 
- * Runs daily at 5:00 PM to check inventory and send low stock alerts
+ * Runs daily at 5:00 PM (Europe/London timezone) to check inventory and send low stock alerts
  * 
  * Configuration:
  * - Edit RECIPIENTS array to add/remove email addresses
- * - Edit REPORT_TIME in automation settings to change schedule
- * - Stock threshold uses each part's min_stock_level field
+ * - Schedule configured in automation settings (Dashboard → Automations)
+ * - Stock threshold uses each part's min_stock_level field (raw stock only)
  */
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
