@@ -26,10 +26,12 @@ Deno.serve(async (req) => {
     
     console.log('🔍 Starting daily low stock report...');
     
-    // Query all parts with low raw stock
+    // Query all parts with low raw stock (exclude RH variants)
     const allParts = await base44.asServiceRole.entities.Part.list();
     const lowStockParts = allParts.filter(p => 
-      p.min_stock_level && (p.raw_stock || 0) < p.min_stock_level
+      p.min_stock_level && 
+      (p.raw_stock || 0) < p.min_stock_level &&
+      !p.is_rh_variant
     );
     
     console.log(`Found ${lowStockParts.length} low stock items`);

@@ -87,7 +87,8 @@ export default function FullStockTakeReport() {
     csvContent += `Part Name,Part Number,Project,Subsection,Blank Qty,Finished Qty,WIP,Total Stock,Min Stock,Reorder Qty,Location,Last Counted,Status\n`;
     
     parts.forEach(part => {
-      const isLowStock = part.min_stock_level && (part.finished_stock || 0) < part.min_stock_level;
+      // Skip RH variants from low stock calculations
+      const isLowStock = !part.is_rh_variant && part.min_stock_level && (part.finished_stock || 0) < part.min_stock_level;
       const totalStock = (part.raw_stock || 0) + (part.finished_stock || 0);
       const status = isLowStock ? 'LOW STOCK' : 'OK';
       csvContent += `"${part.part_name}","${part.part_number}","${part.project_name || ''}","${part.subsection_name || ''}",${part.raw_stock || 0},${part.finished_stock || 0},${part.wip_quantity || 0},${totalStock},${part.min_stock_level || 0},${part.reorder_quantity || 0},"${part.location || ''}","${part.last_counted_date || ''}",${status}\n`;
@@ -112,7 +113,11 @@ export default function FullStockTakeReport() {
     toast.success('CSV downloaded successfully');
   };
 
-  const lowStockParts = parts.filter(p => p.min_stock_level && (p.finished_stock || 0) < p.min_stock_level);
+  const lowStockParts = parts.filter(p => 
+    p.min_stock_level && 
+    (p.finished_stock || 0) < p.min_stock_level && 
+    !p.is_rh_variant
+  );
   const lowStockFixings = fixings.filter(f => f.min_stock_level && (f.current_stock || 0) < f.min_stock_level);
   const totalLowStock = lowStockParts.length + lowStockFixings.length;
   const totalStock = parts.reduce((sum, p) => sum + (p.finished_stock || 0), 0);
@@ -382,8 +387,9 @@ export default function FullStockTakeReport() {
                         </thead>
                         <tbody>
                           {projectParts.map(part => {
-                            const isLowStock = part.min_stock_level && (part.finished_stock || 0) < part.min_stock_level;
-                            const isLowBlank = part.min_stock_level && (part.raw_stock || 0) < part.min_stock_level;
+                            // Skip low stock highlighting for RH variants
+                            const isLowStock = !part.is_rh_variant && part.min_stock_level && (part.finished_stock || 0) < part.min_stock_level;
+                            const isLowBlank = !part.is_rh_variant && part.min_stock_level && (part.raw_stock || 0) < part.min_stock_level;
                             return (
                               <tr key={part.id} className={isLowStock ? 'print:bg-amber-50' : ''}
                                 style={isLowStock ? { backgroundColor: '#FEF3C7' } : {}}>
@@ -451,8 +457,9 @@ export default function FullStockTakeReport() {
                       </thead>
                       <tbody>
                         {unassignedParts.map(part => {
-                          const isLowStock = part.min_stock_level && (part.finished_stock || 0) < part.min_stock_level;
-                          const isLowBlank = part.min_stock_level && (part.raw_stock || 0) < part.min_stock_level;
+                          // Skip low stock highlighting for RH variants
+                          const isLowStock = !part.is_rh_variant && part.min_stock_level && (part.finished_stock || 0) < part.min_stock_level;
+                          const isLowBlank = !part.is_rh_variant && part.min_stock_level && (part.raw_stock || 0) < part.min_stock_level;
                           return (
                             <tr key={part.id} className={isLowStock ? 'print:bg-amber-50' : ''}
                               style={isLowStock ? { backgroundColor: '#FEF3C7' } : {}}>
@@ -558,6 +565,9 @@ export default function FullStockTakeReport() {
             <div className="mt-8 print:mt-6 pt-6 print:pt-4 border-t text-center" style={{ borderColor: '#E2E8F0' }}>
               <p className="text-sm print:text-xs" style={{ color: '#64748B' }}>
                 This report is a snapshot of current stock levels at the time of generation.
+              </p>
+              <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>
+                Note: RH variant parts (created from LH blanks) are excluded from low stock alerts.
               </p>
               <p className="text-xs mt-2" style={{ color: '#94A3B8' }}>
                 Progress Better Manufacturing & Inventory Management System
