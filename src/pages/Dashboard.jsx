@@ -80,7 +80,9 @@ export default function Dashboard() {
   const canManageTeam = isAdmin; // Only full managers can invite/manage users
   const myWips = wips.filter(w => w.worker_email === user?.email);
   const lowStockParts = parts.filter(p => 
-    p.min_stock_level && (p.raw_stock || 0) < p.min_stock_level
+    p.min_stock_level && 
+    (p.raw_stock || 0) < p.min_stock_level &&
+    !p.is_rh_variant
   );
   const lowStockFixings = fixings.filter(f => f.min_stock_level && (f.current_stock || 0) < f.min_stock_level);
   const totalStock = parts.reduce((sum, p) => sum + (p.finished_stock || 0), 0);
