@@ -317,29 +317,60 @@ export default function MyWIP() {
       toast.error('Please provide a reason');
       return;
     }
+    const scrapQty = parseInt(scrapForm.quantity) || selectedWip.quantity;
+    if (scrapQty < 1 || scrapQty > selectedWip.quantity) {
+      toast.error(`Quantity must be between 1 and ${selectedWip.quantity}`);
+      return;
+    }
 
     setSaving(true);
     try {
+      const remainingQty = selectedWip.quantity - scrapQty;
+
+      // Update WIP status; if partial, return remainder to raw stock
       await base44.entities.WorkInProgress.update(selectedWip.id, {
         status: 'scrapped',
-        notes: `SCRAPPED: ${scrapForm.reason}`
+        quantity: scrapQty,
+        notes: `SCRAPPED (${scrapQty} of ${selectedWip.quantity}): ${scrapForm.reason}`
       });
 
       await base44.entities.StockTransaction.create({
         part_id: selectedWip.part_id,
         part_name: selectedWip.part_name,
         transaction_type: 'scrapped',
-        quantity_change: -selectedWip.quantity,
+        quantity_change: -scrapQty,
         wip_id: selectedWip.id,
         operation_name: selectedWip.operation_name,
         user_email: user?.email,
         user_name: user?.full_name,
-        notes: scrapForm.reason
+        notes: `Scrapped ${scrapQty} of ${selectedWip.quantity}: ${scrapForm.reason}`
       });
 
-      toast.success('Batch scrapped');
+      // Return remaining to raw stock if partial scrap
+      if (remainingQty > 0) {
+        const partData = await base44.entities.Part.filter({ id: selectedWip.part_id });
+        if (partData.length > 0) {
+          const newRawStock = (partData[0].raw_stock || 0) + remainingQty;
+          await base44.entities.Part.update(selectedWip.part_id, { raw_stock: newRawStock });
+        }
+        await base44.entities.StockTransaction.create({
+          part_id: selectedWip.part_id,
+          part_name: selectedWip.part_name,
+          transaction_type: 'adjustment',
+          quantity_change: remainingQty,
+          wip_id: selectedWip.id,
+          operation_name: selectedWip.operation_name,
+          user_email: user?.email,
+          user_name: user?.full_name,
+          notes: `Returned ${remainingQty} to raw stock after partial scrap`
+        });
+        toast.success(`${scrapQty} scrapped, ${remainingQty} returned to raw stock`);
+      } else {
+        toast.success(`${scrapQty} scrapped`);
+      }
+
       setShowScrapDialog(false);
-      setScrapForm({ reason: '' });
+      setScrapForm({ reason: '', quantity: '' });
       setSelectedWip(null);
       loadData();
     } catch (e) {
@@ -395,37 +426,42 @@ export default function MyWIP() {
   };
 
   const pauseWip = async () => {
+    const returnQty = parseInt(pauseForm.quantity) || selectedWip.quantity;
+    if (returnQty < 1 || returnQty > selectedWip.quantity) {
+      toast.error(`Quantity must be between 1 and ${selectedWip.quantity}`);
+      return;
+    }
+
     setSaving(true);
     try {
       await base44.entities.WorkInProgress.update(selectedWip.id, {
         status: 'paused',
-        notes: pauseForm.notes || 'Paused by operator'
+        quantity: returnQty,
+        notes: pauseForm.notes || `Paused - ${returnQty} returned to stock`
       });
 
-      // Return parts to RAW stock (not finished, they're still unfinished)
+      // Return selected quantity to RAW stock
       const partData = await base44.entities.Part.filter({ id: selectedWip.part_id });
       if (partData.length > 0) {
-        const newStock = (partData[0].raw_stock || 0) + selectedWip.quantity;
-        await base44.entities.Part.update(selectedWip.part_id, {
-          raw_stock: newStock
-        });
+        const newStock = (partData[0].raw_stock || 0) + returnQty;
+        await base44.entities.Part.update(selectedWip.part_id, { raw_stock: newStock });
       }
 
       await base44.entities.StockTransaction.create({
         part_id: selectedWip.part_id,
         part_name: selectedWip.part_name,
         transaction_type: 'adjustment',
-        quantity_change: selectedWip.quantity,
+        quantity_change: returnQty,
         wip_id: selectedWip.id,
         operation_name: selectedWip.operation_name,
         user_email: user?.email,
         user_name: user?.full_name,
-        notes: `Paused - returned to stock. Progress: ${selectedWip.completed_operations?.length || 0} operations done`
+        notes: `Paused - returned ${returnQty} of ${selectedWip.quantity} to stock. Progress: ${selectedWip.completed_operations?.length || 0} operations done`
       });
 
-      toast.success('Batch paused and returned to stock');
+      toast.success(`Batch paused – ${returnQty} returned to raw stock`);
       setShowPauseDialog(false);
-      setPauseForm({ notes: '' });
+      setPauseForm({ notes: '', quantity: '' });
       setSelectedWip(null);
       loadData();
     } catch (e) {
