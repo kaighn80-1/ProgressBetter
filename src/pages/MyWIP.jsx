@@ -46,8 +46,8 @@ export default function MyWIP() {
   
   const [moveForm, setMoveForm] = useState({ operation_id: '', notes: '' });
   const [completeForm, setCompleteForm] = useState({ notes: '' });
-  const [scrapForm, setScrapForm] = useState({ reason: '' });
-  const [pauseForm, setPauseForm] = useState({ notes: '' });
+  const [scrapForm, setScrapForm] = useState({ reason: '', quantity: '' });
+  const [pauseForm, setPauseForm] = useState({ notes: '', quantity: '' });
   const [cancelForm, setCancelForm] = useState({ reason: '' });
 
   useEffect(() => {
