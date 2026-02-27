@@ -957,10 +957,23 @@ export default function MyWIP() {
           <DialogHeader>
             <DialogTitle className="text-red-600">Scrap Batch</DialogTitle>
             <DialogDescription>
-              This will permanently remove {selectedWip?.quantity} units. This action cannot be undone.
+              Select how many to scrap (max {selectedWip?.quantity}). Any remainder will be returned to raw stock.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <div>
+              <Label>Quantity to Scrap *</Label>
+              <Input
+                type="number"
+                min={1}
+                max={selectedWip?.quantity}
+                placeholder={`Max: ${selectedWip?.quantity}`}
+                value={scrapForm.quantity}
+                onChange={(e) => setScrapForm({ ...scrapForm, quantity: e.target.value })}
+                className="mt-1"
+              />
+              <p className="text-xs text-slate-500 mt-1">Leave blank to scrap all {selectedWip?.quantity} units</p>
+            </div>
             <div>
               <Label>Reason for Scrapping *</Label>
               <Textarea
@@ -977,7 +990,7 @@ export default function MyWIP() {
             </Button>
             <Button onClick={scrapWip} disabled={saving} variant="destructive">
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
-              Scrap Batch
+              Scrap {scrapForm.quantity ? `${scrapForm.quantity} Units` : 'All'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -989,10 +1002,23 @@ export default function MyWIP() {
           <DialogHeader>
             <DialogTitle>Pause & Return to Stock</DialogTitle>
             <DialogDescription>
-              This will return {selectedWip?.quantity} units to stock. You can resume this batch later with progress saved.
+              Select how many units to return to raw stock (max {selectedWip?.quantity}). Progress will be saved.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <div>
+              <Label>Quantity to Return to Stock *</Label>
+              <Input
+                type="number"
+                min={1}
+                max={selectedWip?.quantity}
+                placeholder={`Max: ${selectedWip?.quantity}`}
+                value={pauseForm.quantity}
+                onChange={(e) => setPauseForm({ ...pauseForm, quantity: e.target.value })}
+                className="mt-1"
+              />
+              <p className="text-xs text-slate-500 mt-1">Leave blank to return all {selectedWip?.quantity} units</p>
+            </div>
             <div>
               <Label>Notes (optional)</Label>
               <Textarea
@@ -1009,7 +1035,7 @@ export default function MyWIP() {
             </Button>
             <Button onClick={pauseWip} disabled={saving} className="bg-amber-600 hover:bg-amber-700">
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Pause className="w-4 h-4 mr-2" />}
-              Pause Batch
+              Pause & Return {pauseForm.quantity ? `${pauseForm.quantity}` : 'All'}
             </Button>
           </DialogFooter>
         </DialogContent>
