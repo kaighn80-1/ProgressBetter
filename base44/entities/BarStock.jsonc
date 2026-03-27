@@ -28,6 +28,10 @@
       "default": 0,
       "description": "Total mm currently held across all billets (computed rollup)"
     },
+    "min_stock_level_mm": {
+      "type": "number",
+      "description": "Minimum total mm threshold \u2014 triggers a low stock alert when total remaining drops below this"
+    },
     "notes": {
       "type": "string",
       "description": "Any additional notes"

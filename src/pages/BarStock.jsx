@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Package, Ruler, ChevronDown, ChevronRight, PlusCircle, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Package, Ruler, ChevronDown, ChevronRight, PlusCircle, Loader2, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function BarStock() {
@@ -20,7 +20,7 @@ export default function BarStock() {
   // Bar Stock dialogs
   const [showBarDialog, setShowBarDialog] = useState(false);
   const [editingBar, setEditingBar] = useState(null);
-  const [barForm, setBarForm] = useState({ name: '', thickness_mm: '', height_mm: '', default_kerf_mm: '3', description: '', notes: '' });
+  const [barForm, setBarForm] = useState({ name: '', thickness_mm: '', height_mm: '', default_kerf_mm: '3', min_stock_level_mm: '', description: '', notes: '' });
 
   // Billet dialogs
   const [showBilletDialog, setShowBilletDialog] = useState(false);
@@ -54,7 +54,7 @@ export default function BarStock() {
   // ---- Bar Stock CRUD ----
   const openNewBar = () => {
     setEditingBar(null);
-    setBarForm({ name: '', thickness_mm: '', height_mm: '', default_kerf_mm: '3', description: '', notes: '' });
+    setBarForm({ name: '', thickness_mm: '', height_mm: '', default_kerf_mm: '3', min_stock_level_mm: '', description: '', notes: '' });
     setShowBarDialog(true);
   };
 
@@ -65,6 +65,7 @@ export default function BarStock() {
       thickness_mm: bar.thickness_mm || '',
       height_mm: bar.height_mm || '',
       default_kerf_mm: bar.default_kerf_mm ?? 3,
+      min_stock_level_mm: bar.min_stock_level_mm ?? '',
       description: bar.description || '',
       notes: bar.notes || '',
     });
@@ -82,6 +83,7 @@ export default function BarStock() {
       thickness_mm: parseFloat(barForm.thickness_mm),
       height_mm: parseFloat(barForm.height_mm),
       default_kerf_mm: parseFloat(barForm.default_kerf_mm) || 3,
+      min_stock_level_mm: barForm.min_stock_level_mm ? parseFloat(barForm.min_stock_level_mm) : null,
       description: barForm.description,
       notes: barForm.notes,
     };
@@ -190,6 +192,25 @@ export default function BarStock() {
         </Button>
       </div>
 
+      {/* Low stock alerts */}
+      {barStocks.filter(bar => bar.min_stock_level_mm && getTotalRemaining(bar.id) < bar.min_stock_level_mm).length > 0 && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 space-y-2">
+          <div className="flex items-center gap-2 text-amber-800 font-semibold">
+            <AlertTriangle className="w-5 h-5" />
+            Bar Stock Low — Reorder Required
+          </div>
+          {barStocks
+            .filter(bar => bar.min_stock_level_mm && getTotalRemaining(bar.id) < bar.min_stock_level_mm)
+            .map(bar => (
+              <div key={bar.id} className="flex items-center justify-between text-sm text-amber-700 bg-amber-100 rounded-lg px-3 py-2">
+                <span className="font-medium">{bar.name}</span>
+                <span>{getTotalRemaining(bar.id).toLocaleString()}mm remaining / {bar.min_stock_level_mm.toLocaleString()}mm minimum</span>
+              </div>
+            ))
+          }
+        </div>
+      )}
+
       {barStocks.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
@@ -209,9 +230,10 @@ export default function BarStock() {
           const totalRemaining = getTotalRemaining(bar.id);
           const activeBillets = barBillets.filter(b => b.status === 'active').length;
           const isExpanded = expandedBar === bar.id;
+          const isLowStock = bar.min_stock_level_mm && totalRemaining < bar.min_stock_level_mm;
 
           return (
-            <Card key={bar.id} className="overflow-hidden">
+            <Card key={bar.id} className={`overflow-hidden ${isLowStock ? 'border-l-4 border-l-amber-500' : ''}`}>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer" onClick={() => setExpandedBar(isExpanded ? null : bar.id)}>
@@ -227,8 +249,16 @@ export default function BarStock() {
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <div className="text-right hidden sm:block">
-                      <p className="text-lg font-bold text-slate-800">{totalRemaining.toLocaleString()} mm</p>
+                      <p className={`text-lg font-bold ${isLowStock ? 'text-amber-600' : 'text-slate-800'}`}>
+                        {isLowStock && <AlertTriangle className="w-4 h-4 inline mr-1 mb-0.5" />}
+                        {totalRemaining.toLocaleString()} mm
+                      </p>
                       <p className="text-xs text-slate-500">{activeBillets} active billet{activeBillets !== 1 ? 's' : ''}</p>
+                      {bar.min_stock_level_mm && (
+                        <p className={`text-xs ${isLowStock ? 'text-amber-600 font-medium' : 'text-slate-400'}`}>
+                          Min: {bar.min_stock_level_mm.toLocaleString()}mm
+                        </p>
+                      )}
                     </div>
                     <Button size="sm" variant="ghost" onClick={() => openEditBar(bar)}><Pencil className="w-4 h-4" /></Button>
                     <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700" onClick={() => deleteBar(bar)}><Trash2 className="w-4 h-4" /></Button>
@@ -312,10 +342,17 @@ export default function BarStock() {
                 <Input type="number" placeholder="e.g. 25" value={barForm.height_mm} onChange={e => setBarForm({ ...barForm, height_mm: e.target.value })} className="mt-1" />
               </div>
             </div>
-            <div>
-              <Label>Default Kerf (mm)</Label>
-              <Input type="number" placeholder="3" value={barForm.default_kerf_mm} onChange={e => setBarForm({ ...barForm, default_kerf_mm: e.target.value })} className="mt-1" />
-              <p className="text-xs text-slate-400 mt-1">Saw blade cut thickness — deducted per cut</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Default Kerf (mm)</Label>
+                <Input type="number" placeholder="3" value={barForm.default_kerf_mm} onChange={e => setBarForm({ ...barForm, default_kerf_mm: e.target.value })} className="mt-1" />
+                <p className="text-xs text-slate-400 mt-1">Saw blade cut thickness</p>
+              </div>
+              <div>
+                <Label>Min Stock Level (mm)</Label>
+                <Input type="number" placeholder="e.g. 5000" value={barForm.min_stock_level_mm} onChange={e => setBarForm({ ...barForm, min_stock_level_mm: e.target.value })} className="mt-1" />
+                <p className="text-xs text-slate-400 mt-1">Alert when total remaining drops below this</p>
+              </div>
             </div>
             <div>
               <Label>Description</Label>

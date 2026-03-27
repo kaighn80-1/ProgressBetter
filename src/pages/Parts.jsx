@@ -55,6 +55,8 @@ export default function Parts() {
     return saved ? JSON.parse(saved) : false;
   });
   
+  const [barStocks, setBarStocks] = useState([]);
+
   const [form, setForm] = useState({
     part_name: '',
     part_number: '',
@@ -82,7 +84,10 @@ export default function Parts() {
     is_rh_variant: false,
     rh_part_id: '',
     rh_part_number: '',
-    rh_part_name: ''
+    rh_part_name: '',
+    bar_stock_id: '',
+    bar_stock_name: '',
+    bar_mm_per_part: ''
   });
 
   useEffect(() => {
@@ -101,14 +106,15 @@ export default function Parts() {
 
   const loadParts = async () => {
     try {
-      const [partsData, assembliesData, opsData, fixingsData, projectsData, sectionsData, subsectionsData] = await Promise.all([
+      const [partsData, assembliesData, opsData, fixingsData, projectsData, sectionsData, subsectionsData, barStocksData] = await Promise.all([
         base44.entities.Part.list(),
         base44.entities.Assembly.list('assembly_number'),
         base44.entities.Operation.list('sequence_number'),
         base44.entities.Fixing.list('fixing_name'),
         base44.entities.Project.list('project_name'),
         base44.entities.Section.list('order_index'),
-        base44.entities.Subsection.list('order_index')
+        base44.entities.Subsection.list('order_index'),
+        base44.entities.BarStock.list('name')
       ]);
       
       // Sort parts by project_num, module_letter (A→Z), part_seq
@@ -137,6 +143,7 @@ export default function Parts() {
       setProjects(projectsData);
       setSections(sectionsData);
       setSubsections(subsectionsData);
+      setBarStocks(barStocksData);
     } catch (e) {
       console.error(e);
       toast.error('Failed to load parts');
@@ -193,7 +200,10 @@ export default function Parts() {
       is_rh_variant: false,
       rh_part_id: '',
       rh_part_number: '',
-      rh_part_name: ''
+      rh_part_name: '',
+      bar_stock_id: '',
+      bar_stock_name: '',
+      bar_mm_per_part: ''
     });
     setShowDialog(true);
   };
@@ -227,7 +237,10 @@ export default function Parts() {
       is_rh_variant: part.is_rh_variant || false,
       rh_part_id: part.rh_part_id || '',
       rh_part_number: part.rh_part_number || '',
-      rh_part_name: part.rh_part_name || ''
+      rh_part_name: part.rh_part_name || '',
+      bar_stock_id: part.bar_stock_id || '',
+      bar_stock_name: part.bar_stock_name || '',
+      bar_mm_per_part: part.bar_mm_per_part?.toString() || ''
     });
     setShowDialog(true);
   };
@@ -386,6 +399,7 @@ export default function Parts() {
         min_stock_level: form.min_stock_level ? parseFloat(form.min_stock_level) : null,
         reorder_quantity: form.reorder_quantity ? parseFloat(form.reorder_quantity) : null,
         finished_stock: form.finished_stock ? parseFloat(form.finished_stock) : 0,
+        bar_mm_per_part: form.bar_mm_per_part ? parseFloat(form.bar_mm_per_part) : null,
         required_operation_names: opNames,
         project_name: project?.project_name || null,
         section_name: section?.section_name || null,
@@ -938,6 +952,48 @@ export default function Parts() {
                   <Plus className="w-3 h-3 mr-1" />
                   Add Fixing
                 </Button>
+              </div>
+
+              {/* Bar Stock section */}
+              <div className="col-span-2 pt-4 border-t">
+                <Label className="flex items-center gap-2 text-base font-semibold text-slate-700">
+                  <span>📏</span> Bar Stock (Cut from Bar)
+                </Label>
+                <p className="text-xs text-slate-500 mb-3 mt-1">Link this part to a bar stock profile if it is cut from bar. The Cut Stock page will use these values to pre-fill the cut form.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Bar Stock Profile</Label>
+                    <Select
+                      value={form.bar_stock_id || ''}
+                      onValueChange={v => {
+                        const bs = barStocks.find(b => b.id === v);
+                        setForm({ ...form, bar_stock_id: v || '', bar_stock_name: bs?.name || '' });
+                      }}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="None — not cut from bar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={null}>None</SelectItem>
+                        {barStocks.map(bs => (
+                          <SelectItem key={bs.id} value={bs.id}>{bs.name} ({bs.thickness_mm}×{bs.height_mm}mm)</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>mm per Part (blank length)</Label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 300"
+                      value={form.bar_mm_per_part}
+                      onChange={e => setForm({ ...form, bar_mm_per_part: e.target.value })}
+                      className="mt-1"
+                      disabled={!form.bar_stock_id}
+                    />
+                    <p className="text-xs text-slate-400 mt-1">Length of bar needed per part, excl. kerf</p>
+                  </div>
+                </div>
               </div>
 
               <div className="col-span-2 pt-4 border-t">

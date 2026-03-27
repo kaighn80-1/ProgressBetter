@@ -256,7 +256,19 @@ export default function CutStock() {
                     <SelectValue placeholder="Select part..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {parts.filter(p => p.bar_stock_id === selectedBar?.id || !p.bar_stock_id).map(p => (
+                    {/* Show parts linked to this bar first, then unlinked parts */}
+                    {selectedBar && parts.filter(p => p.bar_stock_id === selectedBar.id).length > 0 && (
+                      <>
+                        <div className="px-2 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wide">Linked to this bar</div>
+                        {parts.filter(p => p.bar_stock_id === selectedBar.id).map(p => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.part_number} — {p.part_name} {p.bar_mm_per_part ? `(${p.bar_mm_per_part}mm)` : ''}
+                          </SelectItem>
+                        ))}
+                        <div className="px-2 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wide border-t mt-1">Other parts</div>
+                      </>
+                    )}
+                    {parts.filter(p => !p.bar_stock_id || p.bar_stock_id !== selectedBar?.id).map(p => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.part_number} — {p.part_name}
                       </SelectItem>

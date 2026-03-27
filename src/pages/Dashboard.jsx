@@ -35,6 +35,8 @@ export default function Dashboard() {
   const [parts, setParts] = useState([]);
   const [fixings, setFixings] = useState([]);
   const [wips, setWips] = useState([]);
+  const [barStocks, setBarStocks] = useState([]);
+  const [barBillets, setBarBillets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -52,16 +54,20 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [userData, partsData, fixingsData, wipsData] = await Promise.all([
+      const [userData, partsData, fixingsData, wipsData, barStocksData, barBilletsData] = await Promise.all([
         base44.auth.me(),
         base44.entities.Part.list(),
         base44.entities.Fixing.list(),
-        base44.entities.WorkInProgress.filter({ status: 'active' })
+        base44.entities.WorkInProgress.filter({ status: 'active' }),
+        base44.entities.BarStock.list(),
+        base44.entities.BarBillet.filter({ status: 'active' })
       ]);
       setUser(userData);
       setParts(partsData);
       setFixings(fixingsData);
       setWips(wipsData);
+      setBarStocks(barStocksData);
+      setBarBillets(barBilletsData);
       
       // Load all users if admin
       if (userData?.role === 'admin') {
@@ -85,6 +91,10 @@ export default function Dashboard() {
     !p.is_rh_variant
   );
   const lowStockFixings = fixings.filter(f => f.min_stock_level && (f.current_stock || 0) < f.min_stock_level);
+
+  const getBarTotalRemaining = (barId) =>
+    barBillets.filter(b => b.bar_stock_id === barId).reduce((s, b) => s + (b.remaining_mm || 0), 0);
+  const lowStockBars = barStocks.filter(bar => bar.min_stock_level_mm && getBarTotalRemaining(bar.id) < bar.min_stock_level_mm);
   const totalStock = parts.reduce((sum, p) => sum + (p.finished_stock || 0), 0);
   const totalWipQuantity = wips.reduce((sum, w) => sum + (w.quantity || 0), 0);
 
@@ -211,24 +221,24 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Link to={createPageUrl('Reports')} className={lowStockParts.length + lowStockFixings.length > 0 ? '' : 'pointer-events-none'}>
+        <Link to={createPageUrl('Reports')} className={lowStockParts.length + lowStockFixings.length + lowStockBars.length > 0 ? '' : 'pointer-events-none'}>
           <Card className={`border-0 shadow-md hover:shadow-lg transition-all`} 
-            style={(lowStockParts.length + lowStockFixings.length) > 0 ? { 
+            style={(lowStockParts.length + lowStockFixings.length + lowStockBars.length) > 0 ? { 
               backgroundColor: '#FEF3C7', 
               border: '2px solid #F59E0B' 
             } : { backgroundColor: '#F8FAFC' }}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center`}
-                  style={(lowStockParts.length + lowStockFixings.length) > 0 ? { backgroundColor: '#FED7AA' } : { backgroundColor: '#F1F5F9' }}>
-                  <AlertTriangle className={`w-6 h-6 ${(lowStockParts.length + lowStockFixings.length) > 0 ? 'animate-pulse' : ''}`}
-                    style={{ color: (lowStockParts.length + lowStockFixings.length) > 0 ? '#F59E0B' : '#CBD5E1' }} />
+                  style={(lowStockParts.length + lowStockFixings.length + lowStockBars.length) > 0 ? { backgroundColor: '#FED7AA' } : { backgroundColor: '#F1F5F9' }}>
+                  <AlertTriangle className={`w-6 h-6 ${(lowStockParts.length + lowStockFixings.length + lowStockBars.length) > 0 ? 'animate-pulse' : ''}`}
+                    style={{ color: (lowStockParts.length + lowStockFixings.length + lowStockBars.length) > 0 ? '#F59E0B' : '#CBD5E1' }} />
                 </div>
                 <div>
                   <p className="text-xs font-medium mb-0.5" style={{ color: '#64748B' }}>Low Stock Alerts</p>
                   <p className={`text-2xl font-bold`}
-                    style={{ color: (lowStockParts.length + lowStockFixings.length) > 0 ? '#F59E0B' : '#CBD5E1' }}>
-                    {lowStockParts.length + lowStockFixings.length}
+                    style={{ color: (lowStockParts.length + lowStockFixings.length + lowStockBars.length) > 0 ? '#F59E0B' : '#CBD5E1' }}>
+                    {lowStockParts.length + lowStockFixings.length + lowStockBars.length}
                   </p>
                 </div>
               </div>
@@ -271,7 +281,7 @@ export default function Dashboard() {
       )}
 
       {/* Low Stock Alerts */}
-      {(lowStockParts.length > 0 || lowStockFixings.length > 0) && (
+      {(lowStockParts.length > 0 || lowStockFixings.length > 0 || lowStockBars.length > 0) && (
         <Card className="border-0 shadow-md border-l-4" style={{ borderLeftColor: '#F59E0B' }}>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2" style={{ color: '#F59E0B' }}>
@@ -314,10 +324,29 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
-            {(lowStockParts.length + lowStockFixings.length) > 5 && (
+            {lowStockBars.map((bar) => (
+              <Link key={bar.id} to={createPageUrl('BarStock')}>
+                <div className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: '#FEF3C7' }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                      <span className="text-base">📏</span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm" style={{ color: '#1E293B' }}>{bar.name}</p>
+                      <p className="text-xs" style={{ color: '#64748B' }}>Bar stock low — reorder needed</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold" style={{ color: '#F59E0B' }}>{getBarTotalRemaining(bar.id).toLocaleString()}mm</p>
+                    <p className="text-xs" style={{ color: '#64748B' }}>Min: {bar.min_stock_level_mm?.toLocaleString()}mm</p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+            {(lowStockParts.length + lowStockFixings.length + lowStockBars.length) > 5 && (
               <Link to={createPageUrl('Reports')}>
                 <Button variant="ghost" className="w-full" style={{ color: '#F59E0B' }}>
-                  View all {lowStockParts.length + lowStockFixings.length} alerts
+                  View all {lowStockParts.length + lowStockFixings.length + lowStockBars.length} alerts
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
