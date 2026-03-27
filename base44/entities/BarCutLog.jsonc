@@ -1,0 +1,74 @@
+{
+  "name": "BarCutLog",
+  "type": "object",
+  "properties": {
+    "bar_billet_id": {
+      "type": "string",
+      "description": "Reference to BarBillet"
+    },
+    "bar_stock_id": {
+      "type": "string",
+      "description": "Reference to BarStock profile"
+    },
+    "bar_stock_name": {
+      "type": "string",
+      "description": "Cached bar stock name"
+    },
+    "part_id": {
+      "type": "string",
+      "description": "Reference to Part being cut"
+    },
+    "part_name": {
+      "type": "string",
+      "description": "Cached part name"
+    },
+    "part_number": {
+      "type": "string",
+      "description": "Cached part number"
+    },
+    "quantity_cut": {
+      "type": "number",
+      "description": "Number of parts cut from this billet"
+    },
+    "mm_per_part": {
+      "type": "number",
+      "description": "mm required per part (blank length)"
+    },
+    "kerf_mm": {
+      "type": "number",
+      "description": "Kerf per cut in mm"
+    },
+    "total_mm_used": {
+      "type": "number",
+      "description": "Total mm consumed = (mm_per_part + kerf_mm) * quantity_cut"
+    },
+    "mm_before": {
+      "type": "number",
+      "description": "Billet remaining mm before this cut"
+    },
+    "mm_after": {
+      "type": "number",
+      "description": "Billet remaining mm after this cut"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "User who performed the cut"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "User name"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notes about this cut"
+    }
+  },
+  "required": [
+    "bar_billet_id",
+    "part_id",
+    "quantity_cut",
+    "mm_per_part",
+    "kerf_mm",
+    "total_mm_used"
+  ]
+}

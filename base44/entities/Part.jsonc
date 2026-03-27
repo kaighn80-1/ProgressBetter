@@ -1,0 +1,211 @@
+{
+  "name": "Part",
+  "type": "object",
+  "properties": {
+    "part_name": {
+      "type": "string",
+      "description": "Name of the part"
+    },
+    "part_number": {
+      "type": "string",
+      "description": "Part number or SKU (unique identifier)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of the part"
+    },
+    "barcode": {
+      "type": "string",
+      "description": "Barcode string that scanner reads"
+    },
+    "unit": {
+      "type": "string",
+      "enum": [
+        "pcs",
+        "kg",
+        "m",
+        "l",
+        "box",
+        "set"
+      ],
+      "default": "pcs",
+      "description": "Unit of measurement"
+    },
+    "min_stock_level": {
+      "type": "number",
+      "description": "Minimum stock level threshold for alerts"
+    },
+    "reorder_quantity": {
+      "type": "number",
+      "description": "Suggested quantity to order when low"
+    },
+    "raw_stock": {
+      "type": "number",
+      "default": 0,
+      "description": "Unworked blanks/raw parts inventory"
+    },
+    "finished_stock": {
+      "type": "number",
+      "default": 0,
+      "description": "Completed/finished parts ready for delivery"
+    },
+    "lh_stock": {
+      "type": "number",
+      "default": 0,
+      "description": "Left Hand variant finished stock (for symmetric parts)"
+    },
+    "rh_stock": {
+      "type": "number",
+      "default": 0,
+      "description": "Right Hand variant finished stock (for symmetric parts)"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "URL of part image"
+    },
+    "category": {
+      "type": "string",
+      "description": "Part category for organization"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Reference to the Project this part belongs to"
+    },
+    "project_name": {
+      "type": "string",
+      "description": "Cached project name for display"
+    },
+    "section_id": {
+      "type": "string",
+      "description": "Reference to the Section"
+    },
+    "section_name": {
+      "type": "string",
+      "description": "Cached section name"
+    },
+    "subsection_id": {
+      "type": "string",
+      "description": "Reference to the Subsection"
+    },
+    "subsection_name": {
+      "type": "string",
+      "description": "Cached subsection name"
+    },
+    "required_operations": {
+      "type": "array",
+      "description": "List of operation IDs in sequence for this part",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_operation_names": {
+      "type": "array",
+      "description": "Cached operation names for display",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tooling_required": {
+      "type": "string",
+      "description": "Tools/equipment needed for this part"
+    },
+    "tooling_location": {
+      "type": "string",
+      "description": "Where tooling is stored"
+    },
+    "finish_type": {
+      "type": "string",
+      "description": "Finish type (e.g., powder coat, anodize, polish)"
+    },
+    "parent_assembly_id": {
+      "type": "string",
+      "description": "Reference to the parent Assembly entity (if this part belongs to an assembly)"
+    },
+    "parent_assembly_number": {
+      "type": "string",
+      "description": "Cached assembly number for display"
+    },
+    "parent_assembly_name": {
+      "type": "string",
+      "description": "Cached assembly name for display"
+    },
+    "location": {
+      "type": "string",
+      "description": "Storage location for this part"
+    },
+    "last_counted_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Last physical count date"
+    },
+    "required_fixings": {
+      "type": "array",
+      "description": "Fixings required per unit",
+      "items": {
+        "type": "object",
+        "properties": {
+          "fixing_id": {
+            "type": "string"
+          },
+          "fixing_name": {
+            "type": "string"
+          },
+          "quantity_per_unit": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "allow_sym_opp": {
+      "type": "boolean",
+      "default": false,
+      "description": "Allow Symmetric Opposite - Check if this blank part can be processed into Left Hand (LH, uses this part's number/name) or Right Hand (RH, separate part)"
+    },
+    "is_rh_variant": {
+      "type": "boolean",
+      "default": false,
+      "description": "Mark this part as a Right Hand (RH) variant for symmetric opposite selection"
+    },
+    "rh_part_id": {
+      "type": "string",
+      "description": "Reference to the RH variant Part (for sym-opp blanks)"
+    },
+    "rh_part_number": {
+      "type": "string",
+      "description": "Cached RH part number for display"
+    },
+    "rh_part_name": {
+      "type": "string",
+      "description": "Cached RH part name for display"
+    },
+    "project_num": {
+      "type": "number",
+      "description": "Auto-computed: First 3 characters of part_number as integer (for sorting)"
+    },
+    "module_letter": {
+      "type": "string",
+      "description": "Auto-computed: 4th character of part_number (for sorting)"
+    },
+    "part_seq": {
+      "type": "number",
+      "description": "Auto-computed: Last 5 characters of part_number as integer (for sorting)"
+    },
+    "bar_stock_id": {
+      "type": "string",
+      "description": "Reference to BarStock profile \u2014 if this part is cut from bar stock"
+    },
+    "bar_stock_name": {
+      "type": "string",
+      "description": "Cached bar stock profile name"
+    },
+    "bar_mm_per_part": {
+      "type": "number",
+      "description": "mm of bar required to cut one of this part (blank length, excluding kerf)"
+    }
+  },
+  "required": [
+    "part_name",
+    "part_number",
+    "barcode"
+  ]
+}

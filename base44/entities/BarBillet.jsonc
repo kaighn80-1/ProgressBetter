@@ -1,0 +1,50 @@
+{
+  "name": "BarBillet",
+  "type": "object",
+  "properties": {
+    "bar_stock_id": {
+      "type": "string",
+      "description": "Reference to BarStock profile"
+    },
+    "bar_stock_name": {
+      "type": "string",
+      "description": "Cached bar stock name"
+    },
+    "original_length_mm": {
+      "type": "number",
+      "description": "Original full length of this billet in mm"
+    },
+    "remaining_mm": {
+      "type": "number",
+      "description": "Remaining usable length in mm"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "depleted",
+        "reserved"
+      ],
+      "default": "active",
+      "description": "Current status of this billet"
+    },
+    "location": {
+      "type": "string",
+      "description": "Physical storage location"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    },
+    "received_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date this billet was received"
+    }
+  },
+  "required": [
+    "bar_stock_id",
+    "original_length_mm",
+    "remaining_mm"
+  ]
+}

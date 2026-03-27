@@ -20,7 +20,8 @@ import {
   Users,
   TrendingUp,
   ArrowRight,
-  Loader2
+  Loader2,
+  Ruler
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -186,6 +187,8 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Projects', page: 'Projects', icon: FolderOpen },
     { name: 'Assemblies', page: 'Assemblies', icon: Package },
     { name: 'Parts Management', page: 'Parts', icon: Package },
+    { name: 'Bar Stock', page: 'BarStock', icon: Ruler },
+    { name: 'Cut Stock', page: 'CutStock', icon: Ruler },
     { name: 'Fixings', page: 'Fixings', icon: Wrench },
     { name: 'Operations', page: 'Operations', icon: Settings },
     { name: 'Delivery Notes', page: 'DeliveryNotes', icon: TrendingUp },

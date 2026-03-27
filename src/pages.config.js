@@ -48,6 +48,8 @@
  * The mainPage value must match a key in the PAGES object exactly.
  */
 import Assemblies from './pages/Assemblies';
+import BarStock from './pages/BarStock';
+import CutStock from './pages/CutStock';
 import ChangePassword from './pages/ChangePassword';
 import Dashboard from './pages/Dashboard';
 import DeliveryNoteDetail from './pages/DeliveryNoteDetail';
@@ -73,6 +75,8 @@ import __Layout from './Layout.jsx';
 
 export const PAGES = {
     "Assemblies": Assemblies,
+    "BarStock": BarStock,
+    "CutStock": CutStock,
     "ChangePassword": ChangePassword,
     "Dashboard": Dashboard,
     "DeliveryNoteDetail": DeliveryNoteDetail,

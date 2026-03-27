@@ -1,0 +1,41 @@
+{
+  "name": "BarStock",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Bar profile name e.g. '50x25 Flat Bar', '60x60 Square Section'"
+    },
+    "description": {
+      "type": "string",
+      "description": "Additional description or material info"
+    },
+    "thickness_mm": {
+      "type": "number",
+      "description": "Thickness dimension in mm"
+    },
+    "height_mm": {
+      "type": "number",
+      "description": "Height dimension in mm"
+    },
+    "default_kerf_mm": {
+      "type": "number",
+      "default": 3,
+      "description": "Default saw kerf / cut thickness in mm"
+    },
+    "total_mm_held": {
+      "type": "number",
+      "default": 0,
+      "description": "Total mm currently held across all billets (computed rollup)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Any additional notes"
+    }
+  },
+  "required": [
+    "name",
+    "thickness_mm",
+    "height_mm"
+  ]
+}
