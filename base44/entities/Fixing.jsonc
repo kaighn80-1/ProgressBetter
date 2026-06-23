@@ -1,0 +1,65 @@
+{
+  "name": "Fixing",
+  "type": "object",
+  "properties": {
+    "fixing_name": {
+      "type": "string",
+      "description": "Name of the fixing/consumable"
+    },
+    "sku": {
+      "type": "string",
+      "description": "SKU or part number"
+    },
+    "barcode": {
+      "type": "string",
+      "description": "Barcode for scanning"
+    },
+    "unit": {
+      "type": "string",
+      "enum": [
+        "pcs",
+        "kg",
+        "m",
+        "l",
+        "box",
+        "set"
+      ],
+      "default": "pcs",
+      "description": "Unit of measurement"
+    },
+    "current_stock": {
+      "type": "number",
+      "default": 0,
+      "description": "Current stock level"
+    },
+    "min_stock_level": {
+      "type": "number",
+      "description": "Minimum stock level threshold"
+    },
+    "reorder_quantity": {
+      "type": "number",
+      "description": "Suggested reorder quantity"
+    },
+    "location": {
+      "type": "string",
+      "description": "Storage location"
+    },
+    "last_counted_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Last physical count date"
+    },
+    "category": {
+      "type": "string",
+      "description": "Category for grouping"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description"
+    }
+  },
+  "required": [
+    "fixing_name",
+    "sku"
+  ]
+}

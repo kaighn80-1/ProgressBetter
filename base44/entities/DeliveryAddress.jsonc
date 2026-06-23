@@ -1,0 +1,39 @@
+{
+  "name": "DeliveryAddress",
+  "type": "object",
+  "properties": {
+    "address_name": {
+      "type": "string",
+      "description": "Name or label for this address (e.g., 'Customer A - Warehouse 1')"
+    },
+    "full_address": {
+      "type": "string",
+      "description": "Full multi-line address"
+    },
+    "contact_name": {
+      "type": "string",
+      "description": "Contact person name"
+    },
+    "contact_phone": {
+      "type": "string",
+      "description": "Contact phone number"
+    },
+    "contact_email": {
+      "type": "string",
+      "description": "Contact email address"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes about this address"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "Mark as default delivery address"
+    }
+  },
+  "required": [
+    "address_name",
+    "full_address"
+  ]
+}

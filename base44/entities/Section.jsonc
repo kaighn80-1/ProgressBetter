@@ -1,0 +1,31 @@
+{
+  "name": "Section",
+  "type": "object",
+  "properties": {
+    "section_name": {
+      "type": "string",
+      "description": "Name of the section"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Reference to the Project"
+    },
+    "project_name": {
+      "type": "string",
+      "description": "Cached project name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the section"
+    },
+    "order_index": {
+      "type": "number",
+      "default": 0,
+      "description": "Order for display"
+    }
+  },
+  "required": [
+    "section_name",
+    "project_id"
+  ]
+}

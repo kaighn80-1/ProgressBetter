@@ -131,6 +131,12 @@ export default function Assemblies() {
       toast.error('Add at least one required part');
       return;
     }
+    // P1 FIX: validate each BOM row has a part selected and quantity > 0
+    const invalidRow = formData.required_parts.findIndex(r => !r.part_id || !(r.quantity_needed > 0));
+    if (invalidRow !== -1) {
+      toast.error(`Row ${invalidRow + 1}: select a part and enter quantity greater than 0`);
+      return;
+    }
 
     // Check for duplicate assembly number
     const exists = assemblies.some(

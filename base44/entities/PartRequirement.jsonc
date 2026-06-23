@@ -1,0 +1,63 @@
+{
+  "name": "PartRequirement",
+  "type": "object",
+  "properties": {
+    "part_id": {
+      "type": "string",
+      "description": "Reference to the Part"
+    },
+    "part_name": {
+      "type": "string",
+      "description": "Cached part name"
+    },
+    "part_number": {
+      "type": "string",
+      "description": "Cached part number"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Reference to the Project"
+    },
+    "project_name": {
+      "type": "string",
+      "description": "Cached project name"
+    },
+    "required_quantity": {
+      "type": "number",
+      "description": "Total quantity needed"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "When the parts are needed"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "urgent"
+      ],
+      "default": "medium",
+      "description": "Manual priority override"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed",
+        "cancelled"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "part_id",
+    "required_quantity"
+  ]
+}

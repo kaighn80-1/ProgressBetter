@@ -1,0 +1,98 @@
+{
+  "name": "DeliveryNote",
+  "type": "object",
+  "properties": {
+    "delivery_note_number": {
+      "type": "string",
+      "description": "Auto-generated delivery note ID"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Reference to Project"
+    },
+    "project_name": {
+      "type": "string",
+      "description": "Cached project name"
+    },
+    "delivery_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Scheduled delivery date"
+    },
+    "delivery_address_id": {
+      "type": "string",
+      "description": "Reference to DeliveryAddress"
+    },
+    "delivery_address_name": {
+      "type": "string",
+      "description": "Cached address name"
+    },
+    "delivery_address_full": {
+      "type": "string",
+      "description": "Full formatted address"
+    },
+    "delivery_contact": {
+      "type": "string",
+      "description": "Contact person and details"
+    },
+    "selected_parts": {
+      "type": "array",
+      "description": "Array of parts with quantities to deliver",
+      "items": {
+        "type": "object",
+        "properties": {
+          "part_id": {
+            "type": "string"
+          },
+          "part_name": {
+            "type": "string"
+          },
+          "part_number": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "total_quantity": {
+      "type": "number",
+      "description": "Total quantity of all parts"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Special instructions or notes"
+    },
+    "generated_by_email": {
+      "type": "string",
+      "description": "Manager who generated this note"
+    },
+    "generated_by_name": {
+      "type": "string",
+      "description": "Manager name"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "generated",
+        "sent",
+        "delivered"
+      ],
+      "default": "draft",
+      "description": "Current status of delivery note"
+    }
+  },
+  "required": [
+    "project_id",
+    "delivery_date",
+    "selected_parts"
+  ]
+}

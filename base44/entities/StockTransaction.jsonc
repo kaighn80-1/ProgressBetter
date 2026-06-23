@@ -1,0 +1,54 @@
+{
+  "name": "StockTransaction",
+  "type": "object",
+  "properties": {
+    "part_id": {
+      "type": "string",
+      "description": "Reference to the Part"
+    },
+    "part_name": {
+      "type": "string",
+      "description": "Cached part name"
+    },
+    "transaction_type": {
+      "type": "string",
+      "enum": [
+        "received_raw_stock",
+        "moved_to_wip",
+        "completed_production",
+        "scrapped",
+        "adjustment"
+      ],
+      "description": "Type of transaction"
+    },
+    "quantity_change": {
+      "type": "number",
+      "description": "Quantity change (positive or negative)"
+    },
+    "wip_id": {
+      "type": "string",
+      "description": "Related WIP entry if applicable"
+    },
+    "operation_name": {
+      "type": "string",
+      "description": "Operation name if WIP-related"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "User who performed the transaction"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "User name"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "part_id",
+    "transaction_type",
+    "quantity_change"
+  ]
+}

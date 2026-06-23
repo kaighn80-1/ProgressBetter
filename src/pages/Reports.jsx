@@ -181,11 +181,11 @@ export default function Reports() {
 
   const getTransactionIcon = (type) => {
     switch (type) {
-      case 'added_to_stock':
+      case 'received_raw_stock':
         return <ArrowUpRight className="w-4 h-4 text-green-500" />;
       case 'moved_to_wip':
         return <ArrowDownRight className="w-4 h-4 text-blue-500" />;
-      case 'completed_wip':
+      case 'completed_production':
         return <ArrowUpRight className="w-4 h-4 text-green-500" />;
       case 'scrapped':
         return <ArrowDownRight className="w-4 h-4 text-red-500" />;
@@ -196,12 +196,11 @@ export default function Reports() {
 
   const getTransactionBadge = (type) => {
     const configs = {
-      added_to_stock: { label: 'Added', className: 'bg-green-100 text-green-700' },
+      received_raw_stock: { label: 'Raw Stock In', className: 'bg-green-100 text-green-700' },
       moved_to_wip: { label: 'To WIP', className: 'bg-blue-100 text-blue-700' },
-      completed_wip: { label: 'Completed', className: 'bg-green-100 text-green-700' },
+      completed_production: { label: 'Completed', className: 'bg-green-100 text-green-700' },
       scrapped: { label: 'Scrapped', className: 'bg-red-100 text-red-700' },
       adjustment: { label: 'Adjusted', className: 'bg-slate-100 text-slate-700' },
-      delivered: { label: 'Delivered', className: 'bg-purple-100 text-purple-700' }
     };
     const config = configs[type] || { label: type, className: 'bg-slate-100 text-slate-700' };
     return <Badge className={config.className}>{config.label}</Badge>;
@@ -210,7 +209,7 @@ export default function Reports() {
   // Operator Activity Calculations
   const completedBatches = operatorWips.filter(w => w.status === 'completed').length;
   const totalPartsCompleted = operatorTransactions
-    .filter(t => t.transaction_type === 'completed_wip')
+    .filter(t => t.transaction_type === 'completed_production')
     .reduce((sum, t) => sum + Math.abs(t.quantity_change), 0);
   const totalScrapped = operatorTransactions
     .filter(t => t.transaction_type === 'scrapped')
@@ -746,10 +745,11 @@ export default function Reports() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="added_to_stock">Added</SelectItem>
+                <SelectItem value="received_raw_stock">Raw Stock In</SelectItem>
                 <SelectItem value="moved_to_wip">To WIP</SelectItem>
-                <SelectItem value="completed_wip">Completed</SelectItem>
+                <SelectItem value="completed_production">Completed</SelectItem>
                 <SelectItem value="scrapped">Scrapped</SelectItem>
+                <SelectItem value="adjustment">Adjustment</SelectItem>
               </SelectContent>
             </Select>
           </div>

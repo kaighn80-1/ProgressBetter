@@ -1,0 +1,40 @@
+{
+  "name": "Subsection",
+  "type": "object",
+  "properties": {
+    "subsection_name": {
+      "type": "string",
+      "description": "Name of the subsection"
+    },
+    "section_id": {
+      "type": "string",
+      "description": "Reference to the Section"
+    },
+    "section_name": {
+      "type": "string",
+      "description": "Cached section name"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Reference to the Project"
+    },
+    "project_name": {
+      "type": "string",
+      "description": "Cached project name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the subsection"
+    },
+    "order_index": {
+      "type": "number",
+      "default": 0,
+      "description": "Order for display"
+    }
+  },
+  "required": [
+    "subsection_name",
+    "section_id",
+    "project_id"
+  ]
+}

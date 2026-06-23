@@ -1,0 +1,51 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user",
+        "Manager",
+        "Supervisor",
+        "Operator"
+      ],
+      "default": "user"
+    },
+    "pin_code": {
+      "type": "string",
+      "description": "4-digit PIN for additional security"
+    },
+    "last_password_change": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of last password change"
+    },
+    "must_change_password": {
+      "type": "boolean",
+      "default": false,
+      "description": "Flag to force password change on next login"
+    },
+    "pin_verified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last time PIN was verified (session tracking)"
+    },
+    "view_mode": {
+      "type": "string",
+      "enum": [
+        "manager",
+        "supervisor",
+        "operator"
+      ],
+      "description": "Current view mode for managers/supervisors"
+    }
+  },
+  "required": [
+    "pin_code",
+    "last_password_change",
+    "pin_verified_at",
+    "view_mode"
+  ]
+}

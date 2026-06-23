@@ -1,0 +1,62 @@
+{
+  "name": "Assembly",
+  "type": "object",
+  "properties": {
+    "assembly_number": {
+      "type": "string",
+      "description": "Unique assembly number identifier"
+    },
+    "assembly_name": {
+      "type": "string",
+      "description": "Name of the assembly"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the assembly"
+    },
+    "required_parts": {
+      "type": "array",
+      "description": "Bill of Materials: list of required parts and quantities",
+      "items": {
+        "type": "object",
+        "properties": {
+          "part_id": {
+            "type": "string",
+            "description": "Reference to Part entity"
+          },
+          "part_number": {
+            "type": "string",
+            "description": "Cached part number for display"
+          },
+          "part_name": {
+            "type": "string",
+            "description": "Cached part name for display"
+          },
+          "quantity_needed": {
+            "type": "number",
+            "description": "Quantity of this part needed per assembly"
+          }
+        }
+      }
+    },
+    "completed_quantity": {
+      "type": "number",
+      "default": 0,
+      "description": "Quantity completed (from WIP rollup)"
+    },
+    "assembly_stock": {
+      "type": "number",
+      "default": 0,
+      "description": "Total assembly stock available for delivery"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes about the assembly"
+    }
+  },
+  "required": [
+    "assembly_number",
+    "assembly_name",
+    "required_parts"
+  ]
+}

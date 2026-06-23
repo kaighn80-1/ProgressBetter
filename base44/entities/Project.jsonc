@@ -1,0 +1,36 @@
+{
+  "name": "Project",
+  "type": "object",
+  "properties": {
+    "project_name": {
+      "type": "string",
+      "description": "Name of the project/job"
+    },
+    "project_number": {
+      "type": "string",
+      "description": "Project or job number"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the project"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed",
+        "on_hold"
+      ],
+      "default": "active",
+      "description": "Current status of the project"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Project due date"
+    }
+  },
+  "required": [
+    "project_name"
+  ]
+}

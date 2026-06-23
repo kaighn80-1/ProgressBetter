@@ -1,0 +1,27 @@
+{
+  "name": "Operation",
+  "type": "object",
+  "properties": {
+    "operation_name": {
+      "type": "string",
+      "description": "Name of the operation (e.g. Cutting, Welding)"
+    },
+    "sequence_number": {
+      "type": "number",
+      "description": "Order in the typical workflow"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of what this operation involves"
+    },
+    "is_final": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this is the final operation before finished stock"
+    }
+  },
+  "required": [
+    "operation_name",
+    "sequence_number"
+  ]
+}

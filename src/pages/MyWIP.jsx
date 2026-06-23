@@ -186,28 +186,42 @@ export default function MyWIP() {
   const completeWip = async () => {
     setSaving(true);
     try {
-      await base44.entities.WorkInProgress.update(selectedWip.id, {
-        status: 'completed'
-      });
-
-      const parts = await base44.entities.Part.filter({ id: selectedWip.part_id });
-      if (parts.length === 0) {
+      // --- P0 FIX: validate and fetch all data BEFORE marking WIP completed ---
+      const partsResult = await base44.entities.Part.filter({ id: selectedWip.part_id });
+      if (partsResult.length === 0) {
         toast.error('Part not found');
         setSaving(false);
         return;
       }
-
-      const blankPart = parts[0];
+      const blankPart = partsResult[0];
       const lhQty = selectedWip.lh_quantity || 0;
       const rhQty = selectedWip.rh_quantity || 0;
-      let successMsg = '';
-      
-      if (lhQty > 0) {
-        const newLhStock = (blankPart.finished_stock || 0) + lhQty;
-        await base44.entities.Part.update(blankPart.id, {
-          finished_stock: newLhStock
-        });
 
+      // Validate RH part exists before touching anything
+      let rhPart = null;
+      if (rhQty > 0) {
+        const rhPartNumber = selectedWip.rh_part_number;
+        if (!rhPartNumber) {
+          toast.error('RH Part Number missing on WIP batch');
+          setSaving(false);
+          return;
+        }
+        const allParts = await base44.entities.Part.list();
+        rhPart = allParts.find(p => p.part_number === rhPartNumber);
+        if (!rhPart) {
+          toast.error(`RH part ${rhPartNumber} not found — contact manager`, { duration: 6000 });
+          setSaving(false);
+          return;
+        }
+      }
+
+      // --- All validation passed: now do stock updates ---
+      let successMsg = '';
+
+      if (lhQty > 0) {
+        await base44.entities.Part.update(blankPart.id, {
+          finished_stock: (blankPart.finished_stock || 0) + lhQty
+        });
         await base44.entities.StockTransaction.create({
           part_id: blankPart.id,
           part_name: blankPart.part_name,
@@ -219,37 +233,14 @@ export default function MyWIP() {
           user_name: user?.full_name,
           notes: `Completed LH → ${blankPart.part_number}`
         });
-
-
-         await rollupToAssembly(blankPart, lhQty);
-
+        await rollupToAssembly(blankPart, lhQty);
         successMsg = `${lhQty} LH on ${blankPart.part_number}`;
       }
 
-      if (rhQty > 0) {
-        const rhPartNumber = selectedWip.rh_part_number;
-        if (!rhPartNumber) {
-          toast.error('RH Part Number missing on WIP batch');
-          setSaving(false);
-          return;
-        }
-
-        const allParts = await base44.entities.Part.list();
-        const rhPart = allParts.find(p => p.part_number === rhPartNumber);
-
-        if (!rhPart) {
-          toast.error(`RH part ${rhPartNumber} not found — contact manager`, {
-            duration: 6000
-          });
-          setSaving(false);
-          return;
-        }
-
-        const newRhStock = (rhPart.finished_stock || 0) + rhQty;
+      if (rhQty > 0 && rhPart) {
         await base44.entities.Part.update(rhPart.id, {
-          finished_stock: newRhStock
+          finished_stock: (rhPart.finished_stock || 0) + rhQty
         });
-
         await base44.entities.StockTransaction.create({
           part_id: rhPart.id,
           part_name: rhPart.part_name,
@@ -259,27 +250,18 @@ export default function MyWIP() {
           operation_name: selectedWip.operation_name,
           user_email: user?.email,
           user_name: user?.full_name,
-          notes: `Completed RH → ${rhPartNumber}`
+          notes: `Completed RH → ${selectedWip.rh_part_number}`
         });
-
-         await rollupToAssembly(rhPart, rhQty);
-
-
-        successMsg += (successMsg ? ' and ' : '') + `${rhQty} RH on ${rhPartNumber}`;
+        await rollupToAssembly(rhPart, rhQty);
+        successMsg += (successMsg ? ' and ' : '') + `${rhQty} RH on ${selectedWip.rh_part_number}`;
       }
 
-      if (successMsg) {
-        toast.success('✓ Production completed!', { 
-          description: successMsg,
-          duration: 5000
-        });
-      } else {
+      if (!successMsg) {
+        // No sym-opp: standard completion
         const totalQty = selectedWip.quantity;
-        const newStock = (blankPart.finished_stock || 0) + totalQty;
         await base44.entities.Part.update(blankPart.id, {
-          finished_stock: newStock
+          finished_stock: (blankPart.finished_stock || 0) + totalQty
         });
-
         await base44.entities.StockTransaction.create({
           part_id: blankPart.id,
           part_name: blankPart.part_name,
@@ -291,15 +273,14 @@ export default function MyWIP() {
           user_name: user?.full_name,
           notes: completeForm.notes || 'Production completed - added to finished stock'
         });
-
-         await rollupToAssembly(blankPart, totalQty);
-
-
-        toast.success('✓ Production completed!', { 
-          description: `${totalQty} units added to finished stock`
-        });
+        await rollupToAssembly(blankPart, totalQty);
+        successMsg = `${totalQty} units added to finished stock`;
       }
 
+      // --- Mark WIP completed LAST, after all stock updates succeed ---
+      await base44.entities.WorkInProgress.update(selectedWip.id, { status: 'completed' });
+
+      toast.success('✓ Production completed!', { description: successMsg, duration: 5000 });
       setShowCompleteDialog(false);
       setCompleteForm({ notes: '' });
       setSelectedWip(null);
@@ -475,12 +456,12 @@ export default function MyWIP() {
   const resumeWip = async (wip) => {
     setSaving(true);
     try {
-      // Remove from stock
+      // P0 FIX: pause returns to raw_stock, so resume must deduct from raw_stock
       const partData = await base44.entities.Part.filter({ id: wip.part_id });
       if (partData.length > 0) {
-        const newStock = Math.max(0, (partData[0].finished_stock || 0) - wip.quantity);
+        const newStock = Math.max(0, (partData[0].raw_stock || 0) - wip.quantity);
         await base44.entities.Part.update(wip.part_id, {
-          finished_stock: newStock
+          raw_stock: newStock
         });
       }
 

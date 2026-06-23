@@ -361,6 +361,13 @@ export default function Scan() {
       return;
     }
 
+    // P1 FIX: hard validate available raw stock before consuming it
+    const availableRaw = scannedPart.raw_stock || 0;
+    if (totalQty > availableRaw) {
+      toast.error(`Insufficient raw stock — only ${availableRaw} available`);
+      return;
+    }
+
     setSaving(true);
     try {
       const operation = operations.find(o => o.id === wipForm.operation_id);
@@ -397,9 +404,9 @@ export default function Scan() {
         notes: wipForm.notes
       });
 
-      // Deduct from RAW stock (starting production uses raw blanks)
+      // Deduct from RAW stock (already validated above)
       await base44.entities.Part.update(scannedPart.id, {
-        raw_stock: Math.max(0, (scannedPart.raw_stock || 0) - totalQty)
+        raw_stock: availableRaw - totalQty
       });
 
       toast.success('WIP batch started!', {
