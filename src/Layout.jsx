@@ -21,7 +21,8 @@ import {
   TrendingUp,
   ArrowRight,
   Loader2,
-  Ruler
+  Ruler,
+  Database
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -196,6 +197,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Stock Report', page: 'FullStockTakeReport', icon: ClipboardList },
     { name: 'Partial Stock Take', page: 'PartialStockTake', icon: AlertTriangle },
     { name: 'Full Stock Take', page: 'FullStockTake', icon: ClipboardList },
+    { name: 'Blank Copy', page: 'DataReset', icon: Database },
   ];
 
   const navItems = 
